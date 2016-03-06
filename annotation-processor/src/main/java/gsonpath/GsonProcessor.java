@@ -10,8 +10,10 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -64,7 +66,7 @@ public class GsonProcessor extends AbstractProcessor {
         ClassName jsonPathType = getElementClassName(element);
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get("com.google.gson", "TypeAdapter"), jsonPathType);
 
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("Test_Adapter")
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(element.getSimpleName() + "_Adapter")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(parameterizedTypeName);
         //
@@ -88,43 +90,40 @@ public class GsonProcessor extends AbstractProcessor {
             }
         }
 
-        if (fieldElements.size() > 0) {
-            codeBlock.addStatement("in.beginObject()");
-            codeBlock.beginControlFlow("while (in.hasNext())");
-            codeBlock.beginControlFlow("switch(in.nextName())");
-
-            for (Element field : fieldElements) {
-                if (!validateFieldType(field)) {
-                    return false;
-                }
-
-                GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
-                String fieldName = field.getSimpleName().toString();
-                String jsonObjectName = (annotation != null ? annotation.value() : fieldName);
-
-                codeBlock.add("case \"$L\":\n", jsonObjectName);
-                codeBlock.indent();
-
-                // Capitalise the first letter of the field type.
-                String gsonMethodType = getFieldType(field);
-                if (gsonMethodType.equals("java.lang.String")) {
-                    gsonMethodType = "String";
-                }
-                gsonMethodType = Character.toUpperCase(gsonMethodType.charAt(0)) + gsonMethodType.substring(1);
-                codeBlock.addStatement("result.$L = in.next$L()", fieldName, gsonMethodType);
-                codeBlock.addStatement("break");
-                codeBlock.unindent();
+        Map<String, Object> jsonMapping = new LinkedHashMap<>();
+        // Obtain the correct mapping structure beforehand.
+        for (Element field : fieldElements) {
+            if (!validateFieldType(field)) {
+                return false;
             }
 
-            codeBlock.add("default:\n");
-            codeBlock.indent();
-            codeBlock.addStatement("in.skipValue()");
-            codeBlock.addStatement("break");
-            codeBlock.unindent();
+            GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
+            String fieldName = field.getSimpleName().toString();
+            String jsonObjectName = (annotation != null ? annotation.value() : fieldName);
 
-            codeBlock.endControlFlow();
-            codeBlock.endControlFlow();
-            codeBlock.addStatement("in.endObject()");
+            if (jsonObjectName.contains(".")) {
+                String[] split = jsonObjectName.split("\\.");
+                Object o = jsonMapping.get(split[0]);
+                if (o != null) {
+                    Map<String, Object> casted = (Map<String, Object>) o;
+                    casted.put(split[1], field);
+
+                } else {
+                    Map<String, Object> casted = new LinkedHashMap<>();
+                    casted.put(split[1], field);
+
+                    jsonMapping.put(split[0], casted);
+                }
+
+            } else {
+                jsonMapping.put(jsonObjectName, field);
+            }
+
+        }
+
+        if (jsonMapping.size() > 0) {
+            if (!createObjectParser(codeBlock, jsonMapping))
+                return false;
         }
 
         // Final block of code.
@@ -151,11 +150,58 @@ public class GsonProcessor extends AbstractProcessor {
 
         try {
             JavaFile.builder(packagePath, typeSpec)
+                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getStringSafely")
                     .build().writeTo(processingEnv.getFiler());
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error while writing javapoet file", element);
             return false;
         }
+
+        return true;
+    }
+
+    private boolean createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
+
+        codeBlock.addStatement("in.beginObject()");
+        codeBlock.beginControlFlow("while (in.hasNext())");
+        codeBlock.beginControlFlow("switch(in.nextName())");
+
+        for (String key : jsonMapping.keySet()) {
+            codeBlock.add("case \"$L\":\n", key);
+            codeBlock.indent();
+
+            Object value = jsonMapping.get(key);
+            if (value instanceof Element) {
+                Element field = (Element) value;
+                // Capitalise the first letter of the field type.
+                String gsonMethodType = getFieldType(field);
+                if (!gsonMethodType.equals("java.lang.String")) {
+                    gsonMethodType = Character.toUpperCase(gsonMethodType.charAt(0)) + gsonMethodType.substring(1);
+                    codeBlock.addStatement("result.$L = in.next$L()", field.getSimpleName().toString(), gsonMethodType);
+
+                } else {
+                    // Special handling for strings.
+                    codeBlock.addStatement("result.$L = getStringSafely(in)", field.getSimpleName().toString());
+                }
+
+            } else {
+                if (!createObjectParser(codeBlock, (Map<String, Object>) value)) {
+                    return false;
+                }
+            }
+            codeBlock.addStatement("break");
+            codeBlock.unindent();
+        }
+
+        codeBlock.add("default:\n");
+        codeBlock.indent();
+        codeBlock.addStatement("in.skipValue()");
+        codeBlock.addStatement("break");
+        codeBlock.unindent();
+
+        codeBlock.endControlFlow();
+        codeBlock.endControlFlow();
+        codeBlock.addStatement("in.endObject()");
 
         return true;
     }

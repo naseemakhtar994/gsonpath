@@ -33,6 +33,8 @@ public class GsonProcessorTest {
                 Joiner.on('\n').join(
                         "package com.test;",
                         "",
+                        "import static gsonpath.GsonPathUtil.getStringSafely;",
+                        "",
                         "import com.google.gson.TypeAdapter;",
                         "import com.google.gson.stream.JsonReader;",
                         "import com.google.gson.stream.JsonWriter;",
@@ -82,6 +84,8 @@ public class GsonProcessorTest {
                 Joiner.on('\n').join(
                         "package com.test;",
                         "",
+                        "import static gsonpath.GsonPathUtil.getStringSafely;",
+                        "",
                         "import com.google.gson.TypeAdapter;",
                         "import com.google.gson.stream.JsonReader;",
                         "import com.google.gson.stream.JsonWriter;",
@@ -96,7 +100,7 @@ public class GsonProcessorTest {
                         "    while (in.hasNext()) {",
                         "      switch(in.nextName()) {",
                         "        case \"Json1\":",
-                        "          result.value1 = in.nextString();",
+                        "          result.value1 = getStringSafely(in);",
                         "          break;",
                         "        case \"value2\":",
                         "          result.value2 = in.nextBoolean();",
@@ -109,6 +113,86 @@ public class GsonProcessorTest {
                         "          break;",
                         "        case \"value5\":",
                         "          result.value5 = in.nextLong();",
+                        "          break;",
+                        "        default:",
+                        "          in.skipValue();",
+                        "          break;",
+                        "      }",
+                        "    }",
+                        "    in.endObject();",
+                        "    return result;",
+                        "  }",
+                        "",
+                        "  @Override",
+                        "  public void write(JsonWriter out, Test value) throws IOException {",
+                        "    // GsonPath does not support writing at this stage.",
+                        "  }",
+                        "}"
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
+    public void testGsonPathWithNestedPrimitives() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                "package com.test;",
+                "import gsonpath.GsonPathClass;",
+                "import gsonpath.GsonPathElement;",
+                "@GsonPathClass",
+                "public class Test {",
+                "  @GsonPathElement(\"Json1\")",
+                "  public String value1;",
+                "  @GsonPathElement(\"Json2.Nest1\")",
+                "  public String value2;",
+                "  @GsonPathElement(\"Json2.Nest2\")",
+                "  public String value3;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_Adapter",
+                Joiner.on('\n').join(
+                        "package com.test;",
+                        "",
+                        "import static gsonpath.GsonPathUtil.getStringSafely;",
+                        "",
+                        "import com.google.gson.TypeAdapter;",
+                        "import com.google.gson.stream.JsonReader;",
+                        "import com.google.gson.stream.JsonWriter;",
+                        "import java.io.IOException;",
+                        "import java.lang.Override;",
+                        "",
+                        "public final class Test_Adapter extends TypeAdapter<Test> {",
+                        "  @Override",
+                        "  public Test read(JsonReader in) throws IOException {",
+                        "    Test result = new Test();",
+                        "    in.beginObject();",
+                        "    while (in.hasNext()) {",
+                        "      switch(in.nextName()) {",
+                        "        case \"Json1\":",
+                        "          result.value1 = getStringSafely(in);",
+                        "          break;",
+                        "        case \"Json2\":",
+                        "          in.beginObject();",
+                        "          while (in.hasNext()) {",
+                        "            switch(in.nextName()) {",
+                        "              case \"Nest1\":",
+                        "                result.value2 = getStringSafely(in);",
+                        "                break;",
+                        "              case \"Nest2\":",
+                        "                result.value3 = getStringSafely(in);",
+                        "                break;",
+                        "              default:",
+                        "                in.skipValue();",
+                        "                break;",
+                        "            }",
+                        "          }",
+                        "          in.endObject();",
                         "          break;",
                         "        default:",
                         "          in.skipValue();",
