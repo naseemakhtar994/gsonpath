@@ -23,7 +23,6 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
@@ -54,19 +53,19 @@ public class GsonProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
         for (Element element : env.getElementsAnnotatedWith(GsonPathClass.class)) {
             System.out.println("Handling element: " + element.getSimpleName());
-            if (!jsonPathClassHandler(element)) {
+            if (!jsonPathClassHandler((TypeElement) element)) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean jsonPathClassHandler(Element element) {
+    private boolean jsonPathClassHandler(TypeElement element) {
         String packagePath = getElementPackage(element);
         ClassName jsonPathType = getElementClassName(element);
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get("com.google.gson", "TypeAdapter"), jsonPathType);
 
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(element.getSimpleName() + "_Adapter")
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(element.getSimpleName() + "_GsonTypeAdapter")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(parameterizedTypeName);
         //
@@ -83,11 +82,16 @@ public class GsonProcessor extends AbstractProcessor {
         CodeBlock.Builder codeBlock = CodeBlock.builder();
         codeBlock.addStatement("$T result = new $T()", jsonPathType, jsonPathType);
 
+        boolean fieldsRequireAnnotation = element.getAnnotation(GsonPathClass.class).ignoreNonAnnotatedFields();
+
         List<Element> fieldElements = new ArrayList<>();
-        for (Element child : element.getEnclosedElements()) {
-            if (child.getKind() == ElementKind.FIELD) {
-                fieldElements.add(child);
+        for (Element child : Utils.getAllFieldElements(element, elementUtils, typeUtils)) {
+
+            if (fieldsRequireAnnotation && (child.getAnnotation(GsonPathElement.class) == null)) {
+                continue;
             }
+
+            fieldElements.add(child);
         }
 
         Map<String, Object> jsonMapping = new LinkedHashMap<>();
@@ -99,7 +103,13 @@ public class GsonProcessor extends AbstractProcessor {
 
             GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
             String fieldName = field.getSimpleName().toString();
-            String jsonObjectName = (annotation != null ? annotation.value() : fieldName);
+            String jsonObjectName;
+
+            if (annotation != null && annotation.value().length() > 0) {
+                jsonObjectName = annotation.value();
+            } else {
+                jsonObjectName = fieldName;
+            }
 
             if (jsonObjectName.contains(".")) {
                 String[] split = jsonObjectName.split("\\.");
@@ -142,7 +152,7 @@ public class GsonProcessor extends AbstractProcessor {
                 .addParameter(ClassName.get("com.google.gson.stream", "JsonWriter"), "out")
                 .addParameter(jsonPathType, "value")
                 .addException(IO_EXCEPTION_TYPE)
-                .addStatement("// GsonPath does not support writing at this stage.");
+                .addCode("// GsonPath does not support writing at this stage.\n");
 
         typeBuilder.addMethod(writeMethod.build());
 
