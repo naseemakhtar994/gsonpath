@@ -42,6 +42,8 @@ public class GsonProcessor extends AbstractProcessor {
     private Types typeUtils;
     private Filer filer;
 
+    private int mVariableCount; // Used to avoid naming conflicts.
+
     @Override
     public synchronized void init(ProcessingEnvironment env) {
         super.init(env);
@@ -143,6 +145,8 @@ public class GsonProcessor extends AbstractProcessor {
         }
 
         if (jsonMapping.size() > 0) {
+            mVariableCount = 0;
+
             if (!createObjectParser(codeBlock, jsonMapping))
                 return false;
         }
@@ -211,6 +215,8 @@ public class GsonProcessor extends AbstractProcessor {
 
                 } else {
                     boolean isStringType = gsonMethodType.equals("java.lang.String");
+                    boolean callToString = false;
+
                     if (isStringType ||
                             gsonMethodType.equals("java.lang.Boolean") ||
                             gsonMethodType.equals("java.lang.Integer") ||
@@ -225,17 +231,25 @@ public class GsonProcessor extends AbstractProcessor {
                             GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
                             if (annotation != null && annotation.collapseJson()) {
                                 handled = true;
-                                codeBlock.addStatement("result.$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in).toString()", field.getSimpleName().toString());
+                                codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mVariableCount);
+
+                                callToString = true;
                             }
                         }
 
                         if (!handled) {
-                            codeBlock.addStatement("result.$L = get$LSafely(in)", field.getSimpleName().toString(), gsonMethodType);
+                            codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mVariableCount, gsonMethodType);
                         }
                     } else {
                         // Handle every other possible class by falling back onto the gson adapter.
-                        codeBlock.addStatement("result.$L = mGson.getAdapter($L.class).read(in)", field.getSimpleName().toString(), gsonMethodType);
+                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L.class).read(in)", gsonMethodType, mVariableCount, gsonMethodType);
                     }
+
+                    codeBlock.beginControlFlow("if (safeValue$L != null)", mVariableCount);
+                    codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mVariableCount, callToString ? ".toString()" : "");
+                    codeBlock.endControlFlow();
+
+                    mVariableCount++;
                 }
 
             } else {
