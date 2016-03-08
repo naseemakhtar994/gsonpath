@@ -6,6 +6,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
@@ -34,7 +35,9 @@ import javax.tools.Diagnostic;
  */
 @AutoService(Processor.class)
 public class GsonProcessor extends AbstractProcessor {
-    private static final ClassName IO_EXCEPTION_TYPE = ClassName.get(IOException.class);
+    private static final TypeName IO_EXCEPTION_TYPE = ClassName.get(IOException.class);
+    private static final TypeName GSON_TYPE = ClassName.get("com.google.gson", "Gson");
+    private static final TypeName JSON_ELEMENT_TYPE = ClassName.get("com.google.gson", "JsonElement");
 
     private Elements elementUtils;
     private Types typeUtils;
@@ -65,9 +68,18 @@ public class GsonProcessor extends AbstractProcessor {
         ClassName jsonPathType = getElementClassName(element);
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get("com.google.gson", "TypeAdapter"), jsonPathType);
 
+        MethodSpec constructor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(GSON_TYPE, "gson")
+                .addStatement("this.$N = $N", "mGson", "gson")
+                .build();
+
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(element.getSimpleName() + "_GsonTypeAdapter")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .superclass(parameterizedTypeName);
+                .superclass(parameterizedTypeName)
+                .addField(GSON_TYPE, "mGson", Modifier.PRIVATE, Modifier.FINAL)
+                .addMethod(constructor);
+
         //
         //@Override
         //public ImageSizes read(JsonReader in) throws IOException {
@@ -191,7 +203,12 @@ public class GsonProcessor extends AbstractProcessor {
 
                 } else {
                     // Special handling for strings.
-                    codeBlock.addStatement("result.$L = getStringSafely(in)", field.getSimpleName().toString());
+                    GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
+                    if (annotation != null && annotation.collapseJson()) {
+                        codeBlock.addStatement("result.$L = mGson.getAdapter($T.class).read(in).toString()", field.getSimpleName().toString(), JSON_ELEMENT_TYPE);
+                    } else {
+                        codeBlock.addStatement("result.$L = getStringSafely(in)", field.getSimpleName().toString());
+                    }
                 }
 
             } else {

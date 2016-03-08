@@ -28,6 +28,8 @@ public class GsonProcessorTest {
             "",
             "import static gsonpath.GsonPathUtil.getStringSafely;",
             "",
+            "import com.google.gson.Gson;",
+            "import com.google.gson.JsonElement;",
             "import com.google.gson.TypeAdapter;",
             "import com.google.gson.stream.JsonReader;",
             "import com.google.gson.stream.JsonWriter;",
@@ -38,6 +40,12 @@ public class GsonProcessorTest {
 
     private static final String STANDARD_RESULT_HEADER = Joiner.on('\n').join(
             "public final class Test_GsonTypeAdapter extends TypeAdapter<Test> {",
+            "  private final Gson mGson;",
+            "",
+            "  public Test_GsonTypeAdapter(Gson gson) {",
+            "    this.mGson = gson;",
+            "  }",
+            "",
             "  @Override",
             "  public Test read(JsonReader in) throws IOException {",
             "    Test result = new Test();"
@@ -246,6 +254,46 @@ public class GsonProcessorTest {
         sources.add(source2);
 
         assertAbout(javaSources()).that(sources)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
+    public void testGsonPathCollapseJson() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@GsonPathClass",
+                "public class Test {",
+                "  @GsonPathElement(value = \"Json1\", collapseJson = true)",
+                "  public String value1;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        STANDARD_RESULT_HEADER,
+                        "    in.beginObject();",
+                        "    while (in.hasNext()) {",
+                        "      switch(in.nextName()) {",
+                        "        case \"Json1\":",
+                        "          result.value1 = mGson.getAdapter(JsonElement.class).read(in).toString();",
+                        "          break;",
+                        "        default:",
+                        "          in.skipValue();",
+                        "          break;",
+                        "      }",
+                        "    }",
+                        "    in.endObject();",
+                        STANDARD_RESULT_FOOTER
+                ));
+
+        assertAbout(javaSource()).that(source)
                 .processedWith(new GsonProcessor())
                 .compilesWithoutError()
                 .and()
