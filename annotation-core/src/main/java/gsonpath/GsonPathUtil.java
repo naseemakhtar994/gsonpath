@@ -13,9 +13,9 @@ public class GsonPathUtil {
     private static boolean isValidValue(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {
             in.skipValue();
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public static String getStringSafely(JsonReader in) throws IOException {

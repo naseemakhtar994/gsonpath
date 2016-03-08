@@ -232,6 +232,9 @@ public class GsonProcessor extends AbstractProcessor {
                         if (!handled) {
                             codeBlock.addStatement("result.$L = get$LSafely(in)", field.getSimpleName().toString(), gsonMethodType);
                         }
+                    } else {
+                        // Handle every other possible class by falling back onto the gson adapter.
+                        codeBlock.addStatement("result.$L = mGson.getAdapter($L.class).read(in)", field.getSimpleName().toString(), gsonMethodType);
                     }
                 }
 
