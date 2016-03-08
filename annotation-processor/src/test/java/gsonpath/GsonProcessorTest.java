@@ -26,10 +26,13 @@ public class GsonProcessorTest {
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
             STANDARD_PACKAGE_NAME,
             "",
+            "import static gsonpath.GsonPathUtil.getBooleanSafely;",
+            "import static gsonpath.GsonPathUtil.getDoubleSafely;",
+            "import static gsonpath.GsonPathUtil.getIntegerSafely;",
+            "import static gsonpath.GsonPathUtil.getLongSafely;",
             "import static gsonpath.GsonPathUtil.getStringSafely;",
             "",
             "import com.google.gson.Gson;",
-            "import com.google.gson.JsonElement;",
             "import com.google.gson.TypeAdapter;",
             "import com.google.gson.stream.JsonReader;",
             "import com.google.gson.stream.JsonWriter;",
@@ -132,6 +135,62 @@ public class GsonProcessorTest {
                         "          break;",
                         "        case \"value5\":",
                         "          result.value5 = in.nextLong();",
+                        "          break;",
+                        "        default:",
+                        "          in.skipValue();",
+                        "          break;",
+                        "      }",
+                        "    }",
+                        "    in.endObject();",
+                        STANDARD_RESULT_FOOTER
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
+    public void testGsonPathWithBoxedPrimitives() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@GsonPathClass",
+                "public class Test {",
+                "  @GsonPathElement(\"Json1\")",
+                "  public String value1;",
+                "  public Boolean value2;",
+                "  public Integer value3;",
+                "  public Double value4;",
+                "  public Long value5;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        STANDARD_RESULT_HEADER,
+                        "    in.beginObject();",
+                        "    while (in.hasNext()) {",
+                        "      switch(in.nextName()) {",
+                        "        case \"Json1\":",
+                        "          result.value1 = getStringSafely(in);",
+                        "          break;",
+                        "        case \"value2\":",
+                        "          result.value2 = getBooleanSafely(in);",
+                        "          break;",
+                        "        case \"value3\":",
+                        "          result.value3 = getIntegerSafely(in);",
+                        "          break;",
+                        "        case \"value4\":",
+                        "          result.value4 = getDoubleSafely(in);",
+                        "          break;",
+                        "        case \"value5\":",
+                        "          result.value5 = getLongSafely(in);",
                         "          break;",
                         "        default:",
                         "          in.skipValue();",
@@ -282,7 +341,7 @@ public class GsonProcessorTest {
                         "    while (in.hasNext()) {",
                         "      switch(in.nextName()) {",
                         "        case \"Json1\":",
-                        "          result.value1 = mGson.getAdapter(JsonElement.class).read(in).toString();",
+                        "          result.value1 = mGson.getAdapter(com.google.gson.JsonElement.class).read(in).toString();",
                         "          break;",
                         "        default:",
                         "          in.skipValue();",
@@ -333,7 +392,7 @@ public class GsonProcessorTest {
         assertAbout(javaSource()).that(source)
                 .processedWith(new GsonProcessor())
                 .failsToCompile()
-                .withErrorContaining("Invalid field type. Expecting: [String, boolean, int, long, double]")
+                .withErrorContaining("Invalid field type: java.lang.Object")
                 .in(source).onLine(7);
     }
 }

@@ -37,7 +37,6 @@ import javax.tools.Diagnostic;
 public class GsonProcessor extends AbstractProcessor {
     private static final TypeName IO_EXCEPTION_TYPE = ClassName.get(IOException.class);
     private static final TypeName GSON_TYPE = ClassName.get("com.google.gson", "Gson");
-    private static final TypeName JSON_ELEMENT_TYPE = ClassName.get("com.google.gson", "JsonElement");
 
     private Elements elementUtils;
     private Types typeUtils;
@@ -173,6 +172,10 @@ public class GsonProcessor extends AbstractProcessor {
         try {
             JavaFile.builder(packagePath, typeSpec)
                     .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getStringSafely")
+                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getBooleanSafely")
+                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getIntegerSafely")
+                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getLongSafely")
+                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getDoubleSafely")
                     .build().writeTo(processingEnv.getFiler());
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error while writing javapoet file", element);
@@ -195,19 +198,40 @@ public class GsonProcessor extends AbstractProcessor {
             Object value = jsonMapping.get(key);
             if (value instanceof Element) {
                 Element field = (Element) value;
-                // Capitalise the first letter of the field type.
+
                 String gsonMethodType = getFieldType(field);
-                if (!gsonMethodType.equals("java.lang.String")) {
+                if (gsonMethodType.equals("boolean") ||
+                        gsonMethodType.equals("int") ||
+                        gsonMethodType.equals("long") ||
+                        gsonMethodType.equals("double")) {
+
+                    // Handle primitives.
                     gsonMethodType = Character.toUpperCase(gsonMethodType.charAt(0)) + gsonMethodType.substring(1);
                     codeBlock.addStatement("result.$L = in.next$L()", field.getSimpleName().toString(), gsonMethodType);
 
                 } else {
-                    // Special handling for strings.
-                    GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
-                    if (annotation != null && annotation.collapseJson()) {
-                        codeBlock.addStatement("result.$L = mGson.getAdapter($T.class).read(in).toString()", field.getSimpleName().toString(), JSON_ELEMENT_TYPE);
-                    } else {
-                        codeBlock.addStatement("result.$L = getStringSafely(in)", field.getSimpleName().toString());
+                    boolean isStringType = gsonMethodType.equals("java.lang.String");
+                    if (isStringType ||
+                            gsonMethodType.equals("java.lang.Boolean") ||
+                            gsonMethodType.equals("java.lang.Integer") ||
+                            gsonMethodType.equals("java.lang.Long") ||
+                            gsonMethodType.equals("java.lang.Double")) {
+
+                        gsonMethodType = gsonMethodType.replace("java.lang.", "");
+
+                        // Special handling for strings.
+                        boolean handled = false;
+                        if (isStringType) {
+                            GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
+                            if (annotation != null && annotation.collapseJson()) {
+                                handled = true;
+                                codeBlock.addStatement("result.$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in).toString()", field.getSimpleName().toString());
+                            }
+                        }
+
+                        if (!handled) {
+                            codeBlock.addStatement("result.$L = get$LSafely(in)", field.getSimpleName().toString(), gsonMethodType);
+                        }
                     }
                 }
 
@@ -240,14 +264,10 @@ public class GsonProcessor extends AbstractProcessor {
     private boolean validateFieldType(Element field) {
         String fieldType = getFieldType(field);
 
-        boolean result = (fieldType.equals("java.lang.String") ||
-                fieldType.equals("boolean") ||
-                fieldType.equals("int") ||
-                fieldType.equals("long") ||
-                fieldType.equals("double"));
+        boolean result = !fieldType.equals("java.lang.Object");
 
         if (!result) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Invalid field type. Expecting: [String, boolean, int, long, double]", field);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Invalid field type: " + fieldType, field);
         }
 
         return result;

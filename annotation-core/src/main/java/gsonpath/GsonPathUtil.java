@@ -10,12 +10,47 @@ import java.io.IOException;
  */
 public class GsonPathUtil {
 
-    public static String getStringSafely(JsonReader in) throws IOException {
+    private static boolean isValidValue(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {
             in.skipValue();
-            return null;
+            return true;
         }
-        return in.nextString();
+        return false;
+    }
+
+    public static String getStringSafely(JsonReader in) throws IOException {
+        if (isValidValue(in)) {
+            return in.nextString();
+        }
+        return null;
+    }
+
+    public static Boolean getBooleanSafely(JsonReader in) throws IOException {
+        if (isValidValue(in)) {
+            return in.nextBoolean();
+        }
+        return null;
+    }
+
+    public static Integer getIntegerSafely(JsonReader in) throws IOException {
+        if (isValidValue(in)) {
+            return in.nextInt();
+        }
+        return null;
+    }
+
+    public static Long getLongSafely(JsonReader in) throws IOException {
+        if (isValidValue(in)) {
+            return in.nextLong();
+        }
+        return null;
+    }
+
+    public static Double getDoubleSafely(JsonReader in) throws IOException {
+        if (isValidValue(in)) {
+            return in.nextDouble();
+        }
+        return null;
     }
 
 }
