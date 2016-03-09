@@ -432,6 +432,25 @@ public class GsonProcessorTest {
     }
 
     @Test
+    public void testGsonPathIgnoreInvalidFields() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@GsonPathClass",
+                "public class Test {",
+                "  private static final String TAG = Test.class.getSimpleName();",
+                "  public static final int element1 = 1;",
+                "  public final int element2 = 2;",
+                "  public static int element3 = 3;",
+                "}"
+        ));
+
+        assertEmptyFile(source);
+    }
+
+    @Test
     public void testGsonPathInvalidType() {
 
         JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(

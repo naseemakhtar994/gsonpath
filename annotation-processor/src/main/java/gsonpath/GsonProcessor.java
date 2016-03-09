@@ -100,6 +100,13 @@ public class GsonProcessor extends AbstractProcessor {
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : Utils.getAllFieldElements(element, elementUtils, typeUtils)) {
 
+            if (child.getModifiers().contains(Modifier.FINAL) ||
+                    child.getModifiers().contains(Modifier.STATIC) ||
+                    child.getModifiers().contains(Modifier.TRANSIENT)) {
+
+                continue;
+            }
+
             if (fieldsRequireAnnotation && (child.getAnnotation(GsonPathElement.class) == null)) {
                 continue;
             }
