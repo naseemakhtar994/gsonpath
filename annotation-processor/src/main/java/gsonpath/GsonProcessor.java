@@ -133,16 +133,28 @@ public class GsonProcessor extends AbstractProcessor {
 
             if (jsonObjectName.contains(".")) {
                 String[] split = jsonObjectName.split("\\.");
-                Object o = jsonMapping.get(split[0]);
-                if (o != null) {
-                    Map<String, Object> casted = (Map<String, Object>) o;
-                    casted.put(split[1], field);
+                int lastIndex = split.length - 1;
 
-                } else {
-                    Map<String, Object> casted = new LinkedHashMap<>();
-                    casted.put(split[1], field);
+                Map<String, Object> currentMap = jsonMapping;
+                for (int i = 0; i < lastIndex + 1; i++) {
+                    String currentKey = split[i];
 
-                    jsonMapping.put(split[0], casted);
+                    if (i < lastIndex) {
+                        Object o = currentMap.get(currentKey);
+                        if (o == null) {
+                            if (i < lastIndex) {
+                                Map<String, Object> newMap = new LinkedHashMap<>();
+
+                                currentMap.put(currentKey, newMap);
+                                currentMap = newMap;
+                            }
+                        } else {
+                            currentMap = (Map<String, Object>) o;
+                        }
+
+                    } else {
+                        currentMap.put(currentKey, field);
+                    }
                 }
 
             } else {
