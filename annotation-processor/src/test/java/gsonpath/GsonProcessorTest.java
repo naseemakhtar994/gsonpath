@@ -22,6 +22,7 @@ public class GsonProcessorTest {
 
     private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonAdapter;";
     private static final String IMPORT_GSON_PATH_ELEMENT = "import gsonpath.GsonPathField;";
+    private static final String IMPORT_GSON_PATH_EXCLUDE = "import gsonpath.GsonPathExclude;";
 
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
             STANDARD_PACKAGE_NAME,
@@ -453,6 +454,47 @@ public class GsonProcessorTest {
         ));
 
         assertEmptyFile(source);
+    }
+
+    @Test
+    public void testGsonPathExcludeFields() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_EXCLUDE,
+                "@AutoGsonAdapter",
+                "public class Test {",
+                "  public int element1;",
+                "  @GsonPathExclude",
+                "  public int element2;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        STANDARD_RESULT_HEADER,
+                        "    in.beginObject();",
+                        "    while (in.hasNext()) {",
+                        "      switch(in.nextName()) {",
+                        "        case \"element1\":",
+                        "          result.element1 = in.nextInt();",
+                        "          break;",
+                        "        default:",
+                        "          in.skipValue();",
+                        "          break;",
+                        "      }",
+                        "    }",
+                        "    in.endObject();",
+                        STANDARD_RESULT_FOOTER
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
     }
 
     @Test

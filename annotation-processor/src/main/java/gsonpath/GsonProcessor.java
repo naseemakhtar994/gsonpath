@@ -170,6 +170,11 @@ public class GsonProcessor extends AbstractProcessor {
                 continue;
             }
 
+            // Ignore any excluded fields
+            if (child.getAnnotation(GsonPathExclude.class) != null) {
+                continue;
+            }
+
             fieldElements.add(child);
         }
 
