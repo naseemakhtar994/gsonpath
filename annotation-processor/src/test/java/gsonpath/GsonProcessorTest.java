@@ -41,42 +41,54 @@ public class GsonProcessorTest {
             ""
     );
 
-    private static final String STANDARD_RESULT_HEADER = Joiner.on('\n').join(
-            "public final class Test_GsonTypeAdapter extends TypeAdapter<Test> {",
-            "  private final Gson mGson;",
-            "",
-            "  public Test_GsonTypeAdapter(Gson gson) {",
-            "    this.mGson = gson;",
-            "  }",
-            "",
-            "  @Override",
-            "  public Test read(JsonReader in) throws IOException {",
-            "    Test result = new Test();"
-    );
+    private static String createResultHeader(String className) {
+        return Joiner.on('\n').join(
+                "public final class " + className + "_GsonTypeAdapter extends TypeAdapter<" + className + "> {",
+                "  private final Gson mGson;",
+                "",
+                "  public " + className + "_GsonTypeAdapter(Gson gson) {",
+                "    this.mGson = gson;",
+                "  }",
+                "",
+                "  @Override",
+                "  public " + className + " read(JsonReader in) throws IOException {",
+                "    " + className + " result = new " + className + "();"
+        );
+    }
 
-    private static final String STANDARD_RESULT_FOOTER = Joiner.on('\n').join(
-            "    return result;",
-            "  }",
-            "",
-            "  @Override",
-            "  public void write(JsonWriter out, Test value) throws IOException {",
-            "    // GsonPath does not support writing at this stage.",
-            "  }",
-            "}"
-    );
+    private static final String STANDARD_RESULT_HEADER = createResultHeader("Test");
 
-    private static final String EMPTY_RESULT = Joiner.on('\n').join(
-            STANDARD_RESULT_PACKAGE_AND_IMPORTS,
-            STANDARD_RESULT_HEADER,
-            STANDARD_RESULT_FOOTER
-    );
+    private static String createResultFooter(String className) {
+        return Joiner.on('\n').join(
+                "    return result;",
+                "  }",
+                "",
+                "  @Override",
+                "  public void write(JsonWriter out, " + className + " value) throws IOException {",
+                "    // GsonPath does not support writing at this stage.",
+                "  }",
+                "}"
+        );
+    }
+
+    private static final String STANDARD_RESULT_FOOTER = createResultFooter("Test");
+
+    private JavaFileObject createEmptyResultSource(String className) {
+        return JavaFileObjects.forSourceString(String.format("test.%s_GsonTypeAdapter", className),
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        createResultHeader(className),
+                        createResultFooter(className)
+                )
+        );
+    }
 
     private void assertEmptyFile(JavaFileObject source) {
         assertAbout(javaSource()).that(source)
                 .processedWith(new GsonProcessor())
                 .compilesWithoutError()
                 .and()
-                .generatesSources(JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter", EMPTY_RESULT));
+                .generatesSources(createEmptyResultSource("Test"));
     }
 
     /**
@@ -485,5 +497,66 @@ public class GsonProcessorTest {
                 .failsToCompile()
                 .withErrorContaining("Invalid field type: java.lang.Object")
                 .in(source).onLine(7);
+    }
+
+    @Test
+    public void testGsonPathGeneratedLoader() {
+
+        JavaFileObject source1 = JavaFileObjects.forSourceString("test.Test1", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@GsonPathClass",
+                "public class Test1 {",
+                "}"
+        ));
+
+        JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test2", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@GsonPathClass",
+                "public class Test2 {",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("gsonpath.GeneratedGsonPathLoader",
+                Joiner.on('\n').join(
+                        "package gsonpath;",
+                        "",
+                        "import com.google.gson.Gson;",
+                        "import com.google.gson.TypeAdapter;",
+                        "import com.google.gson.reflect.TypeToken;",
+                        "import com.test.Test1;",
+                        "import com.test.Test1_GsonTypeAdapter;",
+                        "import com.test.Test2;",
+                        "import com.test.Test2_GsonTypeAdapter;",
+                        "import java.lang.Override;",
+                        "",
+                        "public final class GeneratedGsonPathLoader implements GsonPathLoader {",
+                        "  @Override",
+                        "  public TypeAdapter create(Gson gson, TypeToken type) {",
+                        "    Class rawType = type.getRawType();",
+                        "    if (rawType.equals(Test1.class)) {",
+                        "      return new Test1_GsonTypeAdapter(gson);",
+                        "",
+                        "    } else if (rawType.equals(Test2.class)) {",
+                        "      return new Test2_GsonTypeAdapter(gson);",
+                        "    }",
+                        "    return null;",
+                        "  }",
+                        "}"
+                ));
+
+
+        ArrayList<JavaFileObject> sources = new ArrayList<>();
+        sources.add(source1);
+        sources.add(source2);
+
+        assertAbout(javaSources()).that(sources)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(createEmptyResultSource("Test1"), createEmptyResultSource("Test2"), expectedSource);
     }
 }
