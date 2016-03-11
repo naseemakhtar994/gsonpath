@@ -26,11 +26,7 @@ public class GsonProcessorTest {
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
             STANDARD_PACKAGE_NAME,
             "",
-            "import static gsonpath.GsonPathUtil.getBooleanSafely;",
-            "import static gsonpath.GsonPathUtil.getDoubleSafely;",
-            "import static gsonpath.GsonPathUtil.getIntegerSafely;",
-            "import static gsonpath.GsonPathUtil.getLongSafely;",
-            "import static gsonpath.GsonPathUtil.getStringSafely;",
+            "import static gsonpath.GsonPathUtil.*;",
             "",
             "import com.google.gson.Gson;",
             "import com.google.gson.TypeAdapter;",

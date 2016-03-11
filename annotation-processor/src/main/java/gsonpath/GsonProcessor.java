@@ -250,11 +250,7 @@ public class GsonProcessor extends AbstractProcessor {
 
         try {
             JavaFile javaFile = JavaFile.builder(packagePath, typeSpec)
-                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getStringSafely")
-                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getBooleanSafely")
-                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getIntegerSafely")
-                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getLongSafely")
-                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "getDoubleSafely")
+                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "*")
                     .build();
             javaFile.writeTo(processingEnv.getFiler());
 
