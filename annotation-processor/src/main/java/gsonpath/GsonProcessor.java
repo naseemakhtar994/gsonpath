@@ -58,7 +58,7 @@ public class GsonProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
-        Set<? extends Element> generatedAdapters = env.getElementsAnnotatedWith(GsonPathClass.class);
+        Set<? extends Element> generatedAdapters = env.getElementsAnnotatedWith(AutoGsonAdapter.class);
 
         for (Element element : generatedAdapters) {
             System.out.println("Handling element: " + element.getSimpleName());
@@ -154,7 +154,7 @@ public class GsonProcessor extends AbstractProcessor {
         CodeBlock.Builder codeBlock = CodeBlock.builder();
         codeBlock.addStatement("$T result = new $T()", jsonPathType, jsonPathType);
 
-        boolean fieldsRequireAnnotation = element.getAnnotation(GsonPathClass.class).ignoreNonAnnotatedFields();
+        boolean fieldsRequireAnnotation = element.getAnnotation(AutoGsonAdapter.class).ignoreNonAnnotatedFields();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : Utils.getAllFieldElements(element, elementUtils, typeUtils)) {
@@ -166,7 +166,7 @@ public class GsonProcessor extends AbstractProcessor {
                 continue;
             }
 
-            if (fieldsRequireAnnotation && (child.getAnnotation(GsonPathElement.class) == null)) {
+            if (fieldsRequireAnnotation && (child.getAnnotation(GsonPathField.class) == null)) {
                 continue;
             }
 
@@ -178,7 +178,7 @@ public class GsonProcessor extends AbstractProcessor {
         for (Element field : fieldElements) {
             validateFieldType(field);
 
-            GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
+            GsonPathField annotation = field.getAnnotation(GsonPathField.class);
             String fieldName = field.getSimpleName().toString();
             String jsonObjectName;
 
@@ -301,7 +301,7 @@ public class GsonProcessor extends AbstractProcessor {
                         // Special handling for strings.
                         boolean handled = false;
                         if (isStringType) {
-                            GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
+                            GsonPathField annotation = field.getAnnotation(GsonPathField.class);
                             if (annotation != null && annotation.collapseJson()) {
                                 handled = true;
                                 codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mVariableCount);
@@ -367,8 +367,8 @@ public class GsonProcessor extends AbstractProcessor {
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> supportedTypes = new LinkedHashSet<>();
-        supportedTypes.add(GsonPathClass.class.getCanonicalName());
-        supportedTypes.add(GsonPathElement.class.getCanonicalName());
+        supportedTypes.add(AutoGsonAdapter.class.getCanonicalName());
+        supportedTypes.add(GsonPathField.class.getCanonicalName());
         return supportedTypes;
     }
 
