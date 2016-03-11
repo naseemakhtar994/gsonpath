@@ -57,14 +57,18 @@ public class GsonProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
         for (Element element : env.getElementsAnnotatedWith(GsonPathClass.class)) {
             System.out.println("Handling element: " + element.getSimpleName());
-            if (!jsonPathClassHandler((TypeElement) element)) {
+
+            try {
+                jsonPathClassHandler((TypeElement) element);
+            } catch (UnexpectedAnnotationException e) {
                 return false;
             }
+
         }
         return true;
     }
 
-    private boolean jsonPathClassHandler(TypeElement element) {
+    private void jsonPathClassHandler(TypeElement element) throws UnexpectedAnnotationException {
         String packagePath = getElementPackage(element);
         ClassName jsonPathType = getElementClassName(element);
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get("com.google.gson", "TypeAdapter"), jsonPathType);
@@ -117,9 +121,7 @@ public class GsonProcessor extends AbstractProcessor {
         Map<String, Object> jsonMapping = new LinkedHashMap<>();
         // Obtain the correct mapping structure beforehand.
         for (Element field : fieldElements) {
-            if (!validateFieldType(field)) {
-                return false;
-            }
+            validateFieldType(field);
 
             GsonPathElement annotation = field.getAnnotation(GsonPathElement.class);
             String fieldName = field.getSimpleName().toString();
@@ -166,8 +168,7 @@ public class GsonProcessor extends AbstractProcessor {
         if (jsonMapping.size() > 0) {
             mVariableCount = 0;
 
-            if (!createObjectParser(codeBlock, jsonMapping))
-                return false;
+            createObjectParser(codeBlock, jsonMapping);
         }
 
         // Final block of code.
@@ -202,13 +203,12 @@ public class GsonProcessor extends AbstractProcessor {
                     .build().writeTo(processingEnv.getFiler());
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error while writing javapoet file", element);
-            return false;
-        }
 
-        return true;
+            throw new UnexpectedAnnotationException();
+        }
     }
 
-    private boolean createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
+    private void createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
 
         codeBlock.addStatement("in.beginObject()");
         codeBlock.beginControlFlow("while (in.hasNext())");
@@ -272,9 +272,7 @@ public class GsonProcessor extends AbstractProcessor {
                 }
 
             } else {
-                if (!createObjectParser(codeBlock, (Map<String, Object>) value)) {
-                    return false;
-                }
+                createObjectParser(codeBlock, (Map<String, Object>) value);
             }
             codeBlock.addStatement("break");
             codeBlock.unindent();
@@ -289,24 +287,19 @@ public class GsonProcessor extends AbstractProcessor {
         codeBlock.endControlFlow();
         codeBlock.endControlFlow();
         codeBlock.addStatement("in.endObject()");
-
-        return true;
     }
 
     private String getFieldType(Element field) {
         return field.asType().toString();
     }
 
-    private boolean validateFieldType(Element field) {
+    private void validateFieldType(Element field) throws UnexpectedAnnotationException {
         String fieldType = getFieldType(field);
 
-        boolean result = !fieldType.equals("java.lang.Object");
-
-        if (!result) {
+        if (fieldType.equals("java.lang.Object")) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Invalid field type: " + fieldType, field);
+            throw new UnexpectedAnnotationException();
         }
-
-        return result;
     }
 
     private String getElementPackage(Element element) {
@@ -328,5 +321,9 @@ public class GsonProcessor extends AbstractProcessor {
     @Override
     public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latestSupported();
+    }
+
+    public static class UnexpectedAnnotationException extends Exception {
+
     }
 }
