@@ -1,5 +1,7 @@
 package gsonpath;
 
+import com.squareup.javapoet.ClassName;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +15,7 @@ import javax.lang.model.util.Types;
 /**
  * Created by Lachlan on 7/03/2016.
  */
-public class Utils {
+public class ProcessorUtil {
 
     public static List<? extends Element> getAllFieldElements(TypeElement element, Elements elementsUtil, Types typesUtil) {
         List<Element> elements = new ArrayList<>();
@@ -47,6 +49,18 @@ public class Utils {
             }
         }
         return elements;
+    }
+
+    public static String getElementType(Element field) {
+        return field.asType().toString();
+    }
+
+    public static String getElementPackage(Element element) {
+        return element.getEnclosingElement().asType().toString();
+    }
+
+    public static ClassName getElementClassName(Element element) {
+        return ClassName.get(getElementPackage(element), element.getSimpleName().toString());
     }
 
 }
