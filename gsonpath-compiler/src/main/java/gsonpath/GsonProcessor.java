@@ -1,16 +1,22 @@
 package gsonpath;
 
 import com.google.auto.service.AutoService;
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,10 +42,15 @@ import javax.tools.Diagnostic;
 @AutoService(Processor.class)
 public class GsonProcessor extends AbstractProcessor {
     private static final String ADAPTER_SUFFIX = "_GsonTypeAdapter";
+    private static final String GSON_PACKAGE = "com.google.gson";
 
-    private static final TypeName IO_EXCEPTION_TYPE = ClassName.get(IOException.class);
-    private static final TypeName GSON_TYPE = ClassName.get("com.google.gson", "Gson");
-    private static final ClassName TYPE_ADAPTER = ClassName.get("com.google.gson", "TypeAdapter");
+    private static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
+            "boolean", "int", "long", "double"
+    ));
+
+    private static final Set<String> HANDLED_BOXED_PRIMITIVES = new HashSet<>(Arrays.asList(
+            "java.lang.Boolean", "java.lang.Integer", "java.lang.Long", "java.lang.Double"
+    ));
 
     private Elements elementUtils;
     private Types typeUtils;
@@ -83,9 +94,9 @@ public class GsonProcessor extends AbstractProcessor {
             MethodSpec.Builder createMethod = MethodSpec.methodBuilder("create")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(TYPE_ADAPTER)
-                    .addParameter(GSON_TYPE, "gson")
-                    .addParameter(ClassName.get("com.google.gson.reflect", "TypeToken"), "type");
+                    .returns(TypeAdapter.class)
+                    .addParameter(Gson.class, "gson")
+                    .addParameter(TypeToken.class, "type");
 
             CodeBlock.Builder codeBlock = CodeBlock.builder();
             codeBlock.addStatement("Class rawType = type.getRawType()");
@@ -111,7 +122,9 @@ public class GsonProcessor extends AbstractProcessor {
             typeBuilder.addMethod(createMethod.build());
 
             try {
-                JavaFile.builder("gsonpath", typeBuilder.build()).build().writeTo(processingEnv.getFiler());
+                JavaFile.builder("gsonpath", typeBuilder.build())
+                        .build()
+                        .writeTo(filer);
 
             } catch (IOException e) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error while writing javapoet file: " + e.getMessage());
@@ -126,18 +139,18 @@ public class GsonProcessor extends AbstractProcessor {
     private JavaFile jsonPathClassHandler(TypeElement element) throws UnexpectedAnnotationException {
         String packagePath = getElementPackage(element);
         ClassName jsonPathType = getElementClassName(element);
-        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get("com.google.gson", "TypeAdapter"), jsonPathType);
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get(GSON_PACKAGE, "TypeAdapter"), jsonPathType);
 
         MethodSpec constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(GSON_TYPE, "gson")
+                .addParameter(Gson.class, "gson")
                 .addStatement("this.$N = $N", "mGson", "gson")
                 .build();
 
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(element.getSimpleName() + ADAPTER_SUFFIX)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(parameterizedTypeName)
-                .addField(GSON_TYPE, "mGson", Modifier.PRIVATE, Modifier.FINAL)
+                .addField(Gson.class, "mGson", Modifier.PRIVATE, Modifier.FINAL)
                 .addMethod(constructor);
 
         //
@@ -148,8 +161,8 @@ public class GsonProcessor extends AbstractProcessor {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(jsonPathType)
-                .addParameter(ClassName.get("com.google.gson.stream", "JsonReader"), "in")
-                .addException(IO_EXCEPTION_TYPE);
+                .addParameter(JsonReader.class, "in")
+                .addException(IOException.class);
 
         CodeBlock.Builder codeBlock = CodeBlock.builder();
         codeBlock.addStatement("$T result = new $T()", jsonPathType, jsonPathType);
@@ -244,9 +257,9 @@ public class GsonProcessor extends AbstractProcessor {
         MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(ClassName.get("com.google.gson.stream", "JsonWriter"), "out")
+                .addParameter(JsonWriter.class, "out")
                 .addParameter(jsonPathType, "value")
-                .addException(IO_EXCEPTION_TYPE)
+                .addException(IOException.class)
                 .addCode("// GsonPath does not support writing at this stage.\n");
 
         typeBuilder.addMethod(writeMethod.build());
@@ -255,9 +268,9 @@ public class GsonProcessor extends AbstractProcessor {
 
         try {
             JavaFile javaFile = JavaFile.builder(packagePath, typeSpec)
-                    .addStaticImport(ClassName.get("gsonpath", "GsonPathUtil"), "*")
+                    .addStaticImport(GsonPathUtil.class, "*")
                     .build();
-            javaFile.writeTo(processingEnv.getFiler());
+            javaFile.writeTo(filer);
 
             return javaFile;
         } catch (IOException e) {
@@ -282,10 +295,7 @@ public class GsonProcessor extends AbstractProcessor {
                 Element field = (Element) value;
 
                 String gsonMethodType = getFieldType(field);
-                if (gsonMethodType.equals("boolean") ||
-                        gsonMethodType.equals("int") ||
-                        gsonMethodType.equals("long") ||
-                        gsonMethodType.equals("double")) {
+                if (HANDLED_PRIMITIVES.contains(gsonMethodType)) {
 
                     // Handle primitives.
                     gsonMethodType = Character.toUpperCase(gsonMethodType.charAt(0)) + gsonMethodType.substring(1);
@@ -295,11 +305,7 @@ public class GsonProcessor extends AbstractProcessor {
                     boolean isStringType = gsonMethodType.equals("java.lang.String");
                     boolean callToString = false;
 
-                    if (isStringType ||
-                            gsonMethodType.equals("java.lang.Boolean") ||
-                            gsonMethodType.equals("java.lang.Integer") ||
-                            gsonMethodType.equals("java.lang.Long") ||
-                            gsonMethodType.equals("java.lang.Double")) {
+                    if (isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonMethodType)) {
 
                         gsonMethodType = gsonMethodType.replace("java.lang.", "");
 
