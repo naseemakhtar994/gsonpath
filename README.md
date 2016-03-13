@@ -22,20 +22,12 @@ We can deserialize the content with a single class by using Gson Path. The follo
 
 ```java
 @AutoGsonAdapter
-public class StoreModel {
-    @GsonPathField("")
-    String value1;
+public class PersonModel {
+    @GsonPathField("person.names.first")
+    String firstName;
 
-    @GsonPathField("store.bicycle.price")
-    double bikePrice;
-
-    @AutoGsonAdapter
-    public static class BookModel {
-        public String category;
-        public String author;
-        public String title;
-        public double price;
-    }
+    @GsonPathField("person.names.last")
+    String lastName;
 }
 ```
 This will then generate the following Gson TypeAdapter:
