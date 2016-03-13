@@ -203,7 +203,7 @@ public class AutoGsonAdapterGenerator extends Generator {
     private void createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
         codeBlock.addStatement("in.beginObject()");
         codeBlock.beginControlFlow("while (in.hasNext())");
-        codeBlock.beginControlFlow("switch(in.nextName())");
+        codeBlock.beginControlFlow("switch (in.nextName())");
 
         for (String key : jsonMapping.keySet()) {
             codeBlock.add("case \"$L\":\n", key);
