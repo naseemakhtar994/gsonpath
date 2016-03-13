@@ -56,11 +56,21 @@ public class ProcessorUtil {
     }
 
     public static String getElementPackage(Element element) {
-        return element.getEnclosingElement().asType().toString();
+        Element currentElement = element;
+        while (currentElement instanceof TypeElement) {
+            currentElement = currentElement.getEnclosingElement();
+        }
+        return currentElement.toString();
     }
 
-    public static ClassName getElementClassName(Element element) {
-        return ClassName.get(getElementPackage(element), element.getSimpleName().toString());
+    public static String getElementClassName(Element element) {
+        String packageName = getElementPackage(element);
+        return element.toString().substring(packageName.length() + 1);
+    }
+
+    public static ClassName getElementJavaPoetClassName(Element element) {
+        String packageName = getElementPackage(element);
+        return ClassName.get(packageName, getElementClassName(element));
     }
 
 }

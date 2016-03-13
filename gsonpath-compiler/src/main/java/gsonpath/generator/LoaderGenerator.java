@@ -49,12 +49,12 @@ public class LoaderGenerator extends Generator {
         int currentAdapterIndex = 0;
         for (HandleResult result : generatedGsonAdapters) {
             if (currentAdapterIndex == 0) {
-                codeBlock.beginControlFlow("if (rawType.equals($T.class))", result.originalClassName);
+                codeBlock.beginControlFlow("if (rawType.equals($L.class))", result.originalClassName.toString());
             } else {
                 codeBlock.add("\n"); // New line for easier readability.
-                codeBlock.nextControlFlow("else if (rawType.equals($T.class))", result.originalClassName);
+                codeBlock.nextControlFlow("else if (rawType.equals($L.class))", result.originalClassName.toString());
             }
-            codeBlock.addStatement("return new $T(gson)", result.generatedClassName);
+            codeBlock.addStatement("return new $L(gson)", result.generatedClassName.toString());
 
             currentAdapterIndex++;
         }

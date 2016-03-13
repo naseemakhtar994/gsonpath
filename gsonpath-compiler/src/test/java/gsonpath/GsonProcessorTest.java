@@ -38,22 +38,22 @@ public class GsonProcessorTest {
             ""
     );
 
-    private static String createResultHeader(String className) {
+    private static String createResultHeader(String adapterName, String pojoClassName) {
         return Joiner.on('\n').join(
-                "public final class " + className + "_GsonTypeAdapter extends TypeAdapter<" + className + "> {",
+                "public final class " + adapterName + "_GsonTypeAdapter extends TypeAdapter<" + pojoClassName + "> {",
                 "  private final Gson mGson;",
                 "",
-                "  public " + className + "_GsonTypeAdapter(Gson gson) {",
+                "  public " + adapterName + "_GsonTypeAdapter(Gson gson) {",
                 "    this.mGson = gson;",
                 "  }",
                 "",
                 "  @Override",
-                "  public " + className + " read(JsonReader in) throws IOException {",
-                "    " + className + " result = new " + className + "();"
+                "  public " + pojoClassName + " read(JsonReader in) throws IOException {",
+                "    " + pojoClassName + " result = new " + pojoClassName + "();"
         );
     }
 
-    private static final String STANDARD_RESULT_HEADER = createResultHeader("Test");
+    private static final String STANDARD_RESULT_HEADER = createResultHeader("Test", "Test");
 
     private static String createResultFooter(String className) {
         return Joiner.on('\n').join(
@@ -74,7 +74,7 @@ public class GsonProcessorTest {
         return JavaFileObjects.forSourceString(String.format("test.%s_GsonTypeAdapter", className),
                 Joiner.on('\n').join(
                         STANDARD_RESULT_PACKAGE_AND_IMPORTS,
-                        createResultHeader(className),
+                        createResultHeader(className, className),
                         createResultFooter(className)
                 )
         );
@@ -355,6 +355,47 @@ public class GsonProcessorTest {
     }
 
     @Test
+    public void testGsonPathNested() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                "public class Test {",
+                "  @AutoGsonAdapter",
+                "  public static class NestedTest",
+                "  {",
+                "    public int value1;",
+                "  }",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.NestedTest_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        createResultHeader("NestedTest", "Test.NestedTest"),
+                        "    in.beginObject();",
+                        "    while (in.hasNext()) {",
+                        "      switch(in.nextName()) {",
+                        "        case \"value1\":",
+                        "          result.value1 = in.nextInt();",
+                        "          break;",
+                        "        default:",
+                        "          in.skipValue();",
+                        "          break;",
+                        "      }",
+                        "    }",
+                        "    in.endObject();",
+                        createResultFooter("Test.NestedTest")
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
     public void testGsonPathCollapseJson() {
 
         JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
@@ -565,21 +606,17 @@ public class GsonProcessorTest {
                         "import com.google.gson.Gson;",
                         "import com.google.gson.TypeAdapter;",
                         "import com.google.gson.reflect.TypeToken;",
-                        "import com.test.Test1;",
-                        "import com.test.Test1_GsonTypeAdapter;",
-                        "import com.test.Test2;",
-                        "import com.test.Test2_GsonTypeAdapter;",
                         "import java.lang.Override;",
                         "",
                         "public final class GeneratedGsonPathLoader implements GsonPathLoader {",
                         "  @Override",
                         "  public TypeAdapter create(Gson gson, TypeToken type) {",
                         "    Class rawType = type.getRawType();",
-                        "    if (rawType.equals(Test1.class)) {",
-                        "      return new Test1_GsonTypeAdapter(gson);",
+                        "    if (rawType.equals(com.test.Test1.class)) {",
+                        "      return new com.test.Test1_GsonTypeAdapter(gson);",
                         "",
-                        "    } else if (rawType.equals(Test2.class)) {",
-                        "      return new Test2_GsonTypeAdapter(gson);",
+                        "    } else if (rawType.equals(com.test.Test2.class)) {",
+                        "      return new com.test.Test2_GsonTypeAdapter(gson);",
                         "    }",
                         "    return null;",
                         "  }",

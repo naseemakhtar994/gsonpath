@@ -56,7 +56,7 @@ public class AutoGsonAdapterGenerator extends Generator {
 
     public HandleResult handle(TypeElement element) throws ProcessingException {
         String elementPackagePath = ProcessorUtil.getElementPackage(element);
-        ClassName elementClassName = ProcessorUtil.getElementClassName(element);
+        ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(element);
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get(GSON_PACKAGE, "TypeAdapter"), elementClassName);
 
         MethodSpec constructor = MethodSpec.constructorBuilder()
@@ -65,7 +65,8 @@ public class AutoGsonAdapterGenerator extends Generator {
                 .addStatement("this.$N = $N", "mGson", "gson")
                 .build();
 
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(element.getSimpleName() + ADAPTER_SUFFIX)
+        String adapterClassName = element.getSimpleName() + ADAPTER_SUFFIX;
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(parameterizedTypeName)
                 .addField(Gson.class, "mGson", Modifier.PRIVATE, Modifier.FINAL)
@@ -188,7 +189,7 @@ public class AutoGsonAdapterGenerator extends Generator {
         typeBuilder.addMethod(writeMethod.build());
 
         if (writeFile(elementPackagePath, typeBuilder)) {
-            return new HandleResult(elementClassName, ClassName.get(elementPackagePath, elementClassName.simpleName() + ADAPTER_SUFFIX));
+            return new HandleResult(elementClassName, ClassName.get(elementPackagePath, adapterClassName));
         }
 
         throw new ProcessingException();
