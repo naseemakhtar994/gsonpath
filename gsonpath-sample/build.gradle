@@ -1,0 +1,26 @@
+apply plugin: 'java'
+
+targetCompatibility = JavaVersion.VERSION_1_7
+sourceCompatibility = JavaVersion.VERSION_1_7
+
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "net.ltgt.gradle:gradle-apt-plugin:0.3"
+    }
+}
+
+apply plugin: "net.ltgt.apt"
+
+dependencies {
+    compile 'com.google.code.gson:gson:2.6.1'
+
+    compile project(":gsonpath")
+    apt project(":gsonpath-compiler")
+
+    testCompile 'junit:junit:4.12'
+}
