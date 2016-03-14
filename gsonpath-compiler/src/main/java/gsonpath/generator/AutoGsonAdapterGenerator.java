@@ -86,7 +86,8 @@ public class AutoGsonAdapterGenerator extends Generator {
         CodeBlock.Builder codeBlock = CodeBlock.builder();
         codeBlock.addStatement("$T result = new $T()", elementClassName, elementClassName);
 
-        boolean fieldsRequireAnnotation = element.getAnnotation(AutoGsonAdapter.class).ignoreNonAnnotatedFields();
+        AutoGsonAdapter autoGsonAnnotation = element.getAnnotation(AutoGsonAdapter.class);
+        boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -111,7 +112,30 @@ public class AutoGsonAdapterGenerator extends Generator {
         }
 
         // Obtain the correct mapping structure beforehand.
-        Map<String, Object> jsonMapping = new LinkedHashMap<>();
+        Map<String, Object> rootElements = new LinkedHashMap<>();
+        Map<String, Object> topLevelFieldMap = rootElements;
+
+        // The root element annotation prevents repetition in the GsonPathField annotation.
+        String rootField = autoGsonAnnotation.rootField();
+        if (rootField.length() > 0) {
+            String[] split = rootField.split("\\.");
+
+            if (split.length > 0) {
+                for (String field : split) {
+                    Map<String, Object> mapWithRoot = new LinkedHashMap<>();
+                    topLevelFieldMap.put(field, mapWithRoot);
+                    topLevelFieldMap = mapWithRoot;
+                }
+            } else {
+                Map<String, Object> mapWithRoot = new LinkedHashMap<>();
+                topLevelFieldMap.put(rootField, mapWithRoot);
+                topLevelFieldMap = mapWithRoot;
+            }
+
+        } else {
+            topLevelFieldMap = rootElements;
+        }
+
         for (Element field : fieldElements) {
             String fieldType = ProcessorUtil.getElementType(field);
 
@@ -134,7 +158,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                 String[] split = jsonObjectName.split("\\.");
                 int lastIndex = split.length - 1;
 
-                Map<String, Object> currentMap = jsonMapping;
+                Map<String, Object> currentMap = topLevelFieldMap;
                 for (int i = 0; i < lastIndex + 1; i++) {
                     String currentKey = split[i];
 
@@ -157,15 +181,15 @@ public class AutoGsonAdapterGenerator extends Generator {
                 }
 
             } else {
-                jsonMapping.put(jsonObjectName, field);
+                topLevelFieldMap.put(jsonObjectName, field);
             }
 
         }
 
-        if (jsonMapping.size() > 0) {
+        if (rootElements.size() > 0) {
             mVariableCount = 0;
 
-            createObjectParser(codeBlock, jsonMapping);
+            createObjectParser(codeBlock, rootElements);
         }
 
         // Final block of code.

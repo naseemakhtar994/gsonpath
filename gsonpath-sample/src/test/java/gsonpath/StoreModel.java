@@ -3,15 +3,15 @@ package gsonpath;
 /**
  * Created by Lachlan on 13/03/2016.
  */
-@AutoGsonAdapter
+@AutoGsonAdapter(rootField = "store")
 public class StoreModel {
-    @GsonPathField("store.book")
+    @GsonPathField("book")
     BookModel[] bookList;
 
-    @GsonPathField("store.bicycle.color")
+    @GsonPathField("bicycle.color")
     String bikeColour;
 
-    @GsonPathField("store.bicycle.price")
+    @GsonPathField("bicycle.price")
     double bikePrice;
 
     @AutoGsonAdapter

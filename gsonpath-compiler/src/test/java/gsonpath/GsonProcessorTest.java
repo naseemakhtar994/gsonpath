@@ -305,6 +305,67 @@ public class GsonProcessorTest {
     }
 
     @Test
+    public void testGsonPathWithRootField() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@AutoGsonAdapter(rootField = \"Root.Nest1\")",
+                "public class Test {",
+                "  public int value1;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        STANDARD_RESULT_HEADER,
+                        "    in.beginObject();",
+                        "    while (in.hasNext()) {",
+                        "        switch(in.nextName()) {",
+                        "            case \"Root\":",
+                        "                in.beginObject();",
+                        "                while (in.hasNext()) {",
+                        "                    switch(in.nextName()) {",
+                        "                        case \"Nest1\":",
+                        "                            in.beginObject();",
+                        "                            while (in.hasNext()) {",
+                        "                                switch(in.nextName()) {",
+                        "                                    case \"value1\":",
+                        "                                        result.value1 = in.nextInt();",
+                        "                                        break;",
+                        "                                    default:",
+                        "                                        in.skipValue();",
+                        "                                        break;",
+                        "                                }",
+                        "                            }",
+                        "                            in.endObject();",
+                        "                            break;",
+                        "                        default:",
+                        "                            in.skipValue();",
+                        "                            break;",
+                        "                    }",
+                        "                }",
+                        "                in.endObject();",
+                        "                break;",
+                        "            default:",
+                        "                in.skipValue();",
+                        "                break;",
+                        "        }",
+                        "    }",
+                        "    in.endObject();",
+                        STANDARD_RESULT_FOOTER
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
     public void testGsonPathInheritance() {
 
         JavaFileObject source1 = JavaFileObjects.forSourceString("test.BaseTest", Joiner.on('\n').join(
