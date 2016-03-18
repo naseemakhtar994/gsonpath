@@ -1,4 +1,7 @@
-package gsonpath;
+package gsonpath.generated;
+
+import gsonpath.AutoGsonAdapter;
+import gsonpath.GsonPathField;
 
 /**
  * Created by Lachlan on 13/03/2016.
@@ -6,13 +9,13 @@ package gsonpath;
 @AutoGsonAdapter(rootField = "store")
 public class StoreModel {
     @GsonPathField("book")
-    BookModel[] bookList;
+    public BookModel[] bookList;
 
     @GsonPathField("bicycle.color")
-    String bikeColour;
+    public String bikeColour;
 
     @GsonPathField("bicycle.price")
-    double bikePrice;
+    public double bikePrice;
 
     @AutoGsonAdapter
     public static class BookModel {

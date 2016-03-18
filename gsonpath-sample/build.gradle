@@ -16,6 +16,13 @@ buildscript {
 
 apply plugin: "net.ltgt.apt"
 
+// Fixes an intellij bug where resources aren't on the classpath.
+task copyTestResources(type: Copy) {
+    from "${projectDir}/src/test/resources"
+    into "${buildDir}/classes/test"
+}
+processTestResources.dependsOn copyTestResources
+
 dependencies {
     compile 'com.google.code.gson:gson:2.6.1'
 
@@ -23,4 +30,5 @@ dependencies {
     apt project(":gsonpath-compiler")
 
     testCompile 'junit:junit:4.12'
+    testApt project(":gsonpath-compiler")
 }

@@ -2,6 +2,7 @@ package gsonpath;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import gsonpath.generated.StoreModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,14 +12,14 @@ import java.io.InputStreamReader;
 /**
  * Created by Lachlan on 2/03/2016.
  */
-public class GsonPathTest {
+public class StoreModelTest {
     @Test
     public void test() {
         GsonBuilder builder = new GsonBuilder();
         builder.registerTypeAdapterFactory(new GsonPathTypeAdapterFactory());
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        InputStream resourceAsStream = classLoader.getResourceAsStream("BookJson.json");
+        InputStream resourceAsStream = classLoader.getResourceAsStream("/BookJson.json");
 
         Gson gson = builder.create();
         StoreModel model = gson.fromJson(new InputStreamReader(resourceAsStream), StoreModel.class);
