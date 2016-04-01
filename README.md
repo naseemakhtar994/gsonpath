@@ -1,4 +1,7 @@
 # Gson Path
+
+[![JitPack.io](https://jitpack.io/v/lachlanm/gsonpath.svg)](https://jitpack.io/#lachlanm/gsonpath)
+
 An annotation processor library which generates gson type adapters at compile time which also use basic JsonPath functionality.
 
 The benefits of this library are as follows:
@@ -23,7 +26,7 @@ We can deserialize the content with a single class by using Gson Path. The follo
 ```java
 @AutoGsonAdapter(rootField = "person.names")
 public class PersonModel {
-    @GsonPathField(".first")
+    @GsonPathField("first")
     String firstName;
 
     @GsonPathField("last")
