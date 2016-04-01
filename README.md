@@ -46,67 +46,82 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
     @Override
     public PersonModel read(JsonReader in) throws IOException {
         PersonModel result = new PersonModel();
-        in.beginObject();
 		int counter0 = 0;
+        in.beginObject();
+        
         while (in.hasNext()) {
 			if (counter0 == 1) {
 				in.skipValue();
 				continue;
 			}
+			
             switch(in.nextName()) {
                 case "person":
 					counter0++;
-                    in.beginObject();
 					int counter1 = 0;
+                    in.beginObject();
+                    
                     while (in.hasNext()) {
 						if (counter1 == 1) {
 							in.skipValue();
 							continue;
 						}
+						
                         switch(in.nextName()) {
                             case "names":
 								counter1++;
-                                in.beginObject();
 								int counter2 = 0;
+                                in.beginObject();
+                                
                                 while (in.hasNext()) {
 									if (counter2 == 2) {
 										in.skipValue();
 										continue;
 									}
+									
                                     switch(in.nextName()) {
                                         case "first":
 											counter2++;
+											
                                             String safeValue0 = getStringSafely(in);
                                             if (safeValue0 != null) {
                                                 result.firstName = safeValue0;
                                             }
                                             break;
+                                            
                                         case "last":
 											counter2++;
+											
                                             String safeValue1 = getStringSafely(in);
                                             if (safeValue1 != null) {
                                                 result.lastName = safeValue1;
                                             }
                                             break;
+                                            
                                         default:
                                             in.skipValue();
                                             break;
                                     }
                                 }
+                                
                                 in.endObject();
                                 break;
+                                
                             default:
                                 in.skipValue();
                                 break;
                         }
                     }
+                    
                     in.endObject();
                     break;
+                    
                 default:
                     in.skipValue();
                     break;
             }
         }
+        
         in.endObject();
         return result;
     }

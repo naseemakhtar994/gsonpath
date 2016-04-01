@@ -228,11 +228,12 @@ public class AutoGsonAdapterGenerator extends Generator {
     }
 
     private void createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
-        String counterVariableName = "counter" + mCounterVariableCount;
+        String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
 
-        codeBlock.addStatement("in.beginObject()");
         codeBlock.addStatement("int $L = 0", counterVariableName);
+        codeBlock.addStatement("in.beginObject()");
+        codeBlock.add("\n");
         codeBlock.beginControlFlow("while (in.hasNext())");
 
         //
@@ -244,6 +245,7 @@ public class AutoGsonAdapterGenerator extends Generator {
         codeBlock.addStatement("in.skipValue()");
         codeBlock.addStatement("continue");
         codeBlock.endControlFlow();
+        codeBlock.add("\n");
 
         codeBlock.beginControlFlow("switch (in.nextName())");
 
@@ -266,6 +268,9 @@ public class AutoGsonAdapterGenerator extends Generator {
                     codeBlock.addStatement("result.$L = in.next$L()", field.getSimpleName().toString(), gsonMethodType);
 
                 } else {
+                    // Add a new line to improve readability for the multi-lined mapping.
+                    codeBlock.add("\n");
+
                     boolean isStringType = gsonMethodType.equals("java.lang.String");
                     boolean callToString = false;
 
@@ -304,6 +309,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                 createObjectParser(codeBlock, (Map<String, Object>) value);
             }
             codeBlock.addStatement("break");
+            codeBlock.add("\n");
             codeBlock.unindent();
         }
 
@@ -315,6 +321,7 @@ public class AutoGsonAdapterGenerator extends Generator {
 
         codeBlock.endControlFlow();
         codeBlock.endControlFlow();
+        codeBlock.add("\n");
         codeBlock.addStatement("in.endObject()");
     }
 

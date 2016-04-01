@@ -59,6 +59,7 @@ public class LoaderGenerator extends Generator {
             currentAdapterIndex++;
         }
         codeBlock.endControlFlow();
+        codeBlock.add("\n");
         codeBlock.addStatement("return null");
 
         createMethod.addCode(codeBlock.build());
