@@ -21,12 +21,12 @@ For example, given the following JSON:
 We can deserialize the content with a single class by using Gson Path. The following class demonstrates the annotations required to create a type adapter which can correctly read the content.
 
 ```java
-@AutoGsonAdapter
+@AutoGsonAdapter(rootField = "person.names")
 public class PersonModel {
-    @GsonPathField("person.names.first")
+    @GsonPathField(".first")
     String firstName;
 
-    @GsonPathField("person.names.last")
+    @GsonPathField("last")
     String lastName;
 }
 ```
@@ -44,23 +44,42 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
     public PersonModel read(JsonReader in) throws IOException {
         PersonModel result = new PersonModel();
         in.beginObject();
+		int counter0 = 0;
         while (in.hasNext()) {
+			if (counter0 == 1) {
+				in.skipValue();
+				continue;
+			}
             switch(in.nextName()) {
                 case "person":
+					counter0++;
                     in.beginObject();
+					int counter1 = 0;
                     while (in.hasNext()) {
+						if (counter1 == 1) {
+							in.skipValue();
+							continue;
+						}
                         switch(in.nextName()) {
                             case "names":
+								counter1++;
                                 in.beginObject();
+								int counter2 = 0;
                                 while (in.hasNext()) {
+									if (counter2 == 2) {
+										in.skipValue();
+										continue;
+									}
                                     switch(in.nextName()) {
                                         case "first":
+											counter2++;
                                             String safeValue0 = getStringSafely(in);
                                             if (safeValue0 != null) {
                                                 result.firstName = safeValue0;
                                             }
                                             break;
                                         case "last":
+											counter2++;
                                             String safeValue1 = getStringSafely(in);
                                             if (safeValue1 != null) {
                                                 result.lastName = safeValue1;
@@ -102,6 +121,6 @@ For now, you can obtain it via [Jitpack](https://jitpack.io/docs/)
 
 Gradle:
 ```gradle
-compile 'com.github.lachlanm.gsonpath:gsonpath:1.0.3'
-apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.0.3'
+compile 'com.github.lachlanm.gsonpath:gsonpath:1.0.5'
+apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.0.5'
 ```
