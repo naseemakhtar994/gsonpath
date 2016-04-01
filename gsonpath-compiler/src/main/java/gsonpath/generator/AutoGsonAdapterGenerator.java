@@ -48,7 +48,9 @@ public class AutoGsonAdapterGenerator extends Generator {
             "java.lang.Boolean", "java.lang.Integer", "java.lang.Long", "java.lang.Double"
     ));
 
-    private int mVariableCount; // Used to avoid naming conflicts.
+    // Used to avoid naming conflicts.
+    private int mCounterVariableCount;
+    private int mSafeVariableCount;
 
     public AutoGsonAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
@@ -187,7 +189,8 @@ public class AutoGsonAdapterGenerator extends Generator {
         }
 
         if (rootElements.size() > 0) {
-            mVariableCount = 0;
+            mCounterVariableCount = 0;
+            mSafeVariableCount = 0;
 
             createObjectParser(codeBlock, rootElements);
         }
@@ -225,13 +228,31 @@ public class AutoGsonAdapterGenerator extends Generator {
     }
 
     private void createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
+        String counterVariableName = "counter" + mCounterVariableCount;
+        mCounterVariableCount++;
+
         codeBlock.addStatement("in.beginObject()");
+        codeBlock.addStatement("int $L = 0", counterVariableName);
         codeBlock.beginControlFlow("while (in.hasNext())");
+
+        //
+        // Since all the required fields have been mapped, we can avoid calling 'nextName'.
+        // This ends up yielding performance improvements on large datasets depending on
+        // the ordering of the fields within the JSON.
+        //
+        codeBlock.beginControlFlow("if ($L == $L)", counterVariableName, jsonMapping.size());
+        codeBlock.addStatement("in.skipValue()");
+        codeBlock.addStatement("continue");
+        codeBlock.endControlFlow();
+
         codeBlock.beginControlFlow("switch (in.nextName())");
 
         for (String key : jsonMapping.keySet()) {
             codeBlock.add("case \"$L\":\n", key);
             codeBlock.indent();
+
+            // Increment the counter to ensure we track how many fields we have mapped.
+            codeBlock.addStatement("$L++", counterVariableName);
 
             Object value = jsonMapping.get(key);
             if (value instanceof Element) {
@@ -258,25 +279,25 @@ public class AutoGsonAdapterGenerator extends Generator {
                             GsonPathField annotation = field.getAnnotation(GsonPathField.class);
                             if (annotation != null && annotation.collapseJson()) {
                                 handled = true;
-                                codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mVariableCount);
+                                codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
 
                                 callToString = true;
                             }
                         }
 
                         if (!handled) {
-                            codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mVariableCount, gsonMethodType);
+                            codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
                         }
                     } else {
                         // Handle every other possible class by falling back onto the gson adapter.
-                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L.class).read(in)", gsonMethodType, mVariableCount, gsonMethodType);
+                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L.class).read(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
                     }
 
-                    codeBlock.beginControlFlow("if (safeValue$L != null)", mVariableCount);
-                    codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mVariableCount, callToString ? ".toString()" : "");
+                    codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
+                    codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
                     codeBlock.endControlFlow();
 
-                    mVariableCount++;
+                    mSafeVariableCount++;
                 }
 
             } else {
