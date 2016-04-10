@@ -33,7 +33,18 @@ public class PersonModel {
     String lastName;
 }
 ```
-This will then generate the following Gson TypeAdapter:
+
+We could also write it as follows (to reduce the number of annotations required):
+
+```java
+@AutoGsonAdapter(rootField = "person.names")
+public class PersonModel {
+    String first;
+    String last;
+}
+```
+
+Both POJOs will generate the following Gson TypeAdapter:
 
 ```java
 public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> {
@@ -46,42 +57,54 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
     @Override
     public PersonModel read(JsonReader in) throws IOException {
         PersonModel result = new PersonModel();
-		int counter0 = 0;
+		int jsonFieldCounter0 = 0;
         in.beginObject();
         
         while (in.hasNext()) {
-			if (counter0 == 1) {
+			if (jsonFieldCounter0 == 1) {
 				in.skipValue();
 				continue;
 			}
 			
             switch(in.nextName()) {
                 case "person":
-					counter0++;
-					int counter1 = 0;
+					jsonFieldCounter0++;
+					
+                    // Ensure the object is not null.
+                    if (!isValidValue(in)) {
+                        break;
+                    }
+                    
+					int jsonFieldCounter1 = 0;
                     in.beginObject();
                     
                     while (in.hasNext()) {
-						if (counter1 == 1) {
+						if (jsonFieldCounter1 == 1) {
 							in.skipValue();
 							continue;
 						}
 						
                         switch(in.nextName()) {
                             case "names":
-								counter1++;
-								int counter2 = 0;
+								jsonFieldCounter1++;
+								
+								// Ensure the object is not null.
+								if (!isValidValue(in)) {
+								    break;
+								}
+								
+								int jsonFieldCounter2 = 0;
                                 in.beginObject();
                                 
                                 while (in.hasNext()) {
-									if (counter2 == 2) {
+									if (jsonFieldCounter2 == 2) {
 										in.skipValue();
 										continue;
 									}
 									
                                     switch(in.nextName()) {
                                         case "first":
-											counter2++;
+											jsonFieldCounter2++;
 											
                                             String safeValue0 = getStringSafely(in);
                                             if (safeValue0 != null) {
@@ -90,7 +113,7 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
                                             break;
                                             
                                         case "last":
-											counter2++;
+											jsonFieldCounter2++;
 											
                                             String safeValue1 = getStringSafely(in);
                                             if (safeValue1 != null) {
@@ -139,6 +162,6 @@ For now, you can obtain it via [Jitpack](https://jitpack.io/docs/)
 
 Gradle:
 ```gradle
-compile 'com.github.lachlanm.gsonpath:gsonpath:1.0.5'
-apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.0.5'
+compile 'com.github.lachlanm.gsonpath:gsonpath:1.0.6'
+apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.0.6'
 ```
