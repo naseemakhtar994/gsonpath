@@ -22,8 +22,8 @@ public class GsonProcessorTest {
 
     private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonAdapter;";
     private static final String IMPORT_GSON_PATH_ELEMENT = "import com.google.gson.annotations.SerializedName;";
-    private static final String IMPORT_GSON_PATH_EXCLUDE = "import gsonpath.GsonExclude;";
-    private static final String IMPORT_GSON_PATH_FLATTEN = "import gsonpath.GsonFlatten;";
+    private static final String IMPORT_GSON_PATH_EXCLUDE = "import gsonpath.ExcludeField;";
+    private static final String IMPORT_GSON_PATH_FLATTEN = "import gsonpath.FlattenJson;";
 
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
             STANDARD_PACKAGE_NAME,
@@ -692,7 +692,7 @@ public class GsonProcessorTest {
                 IMPORT_GSON_PATH_FLATTEN,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonFlatten",
+                "    @FlattenJson",
                 "    @SerializedName(\"Json1\")",
                 "    public String value1;",
                 "}"
@@ -818,7 +818,7 @@ public class GsonProcessorTest {
                 "@AutoGsonAdapter",
                 "public class Test {",
                 "    public int element1;",
-                "    @GsonExclude",
+                "    @ExcludeField",
                 "    public int element2;",
                 "}"
         ));

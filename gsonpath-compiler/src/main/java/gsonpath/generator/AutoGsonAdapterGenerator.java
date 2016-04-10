@@ -103,7 +103,7 @@ public class AutoGsonAdapterGenerator extends Generator {
             }
 
             // Ignore any excluded fields
-            if (child.getAnnotation(GsonExclude.class) != null) {
+            if (child.getAnnotation(ExcludeField.class) != null) {
                 continue;
             }
 
@@ -302,7 +302,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                         // Special handling for strings.
                         boolean handled = false;
                         if (isStringType) {
-                            GsonFlatten annotation = field.getAnnotation(GsonFlatten.class);
+                            FlattenJson annotation = field.getAnnotation(FlattenJson.class);
                             if (annotation != null) {
                                 handled = true;
                                 codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
@@ -351,12 +351,12 @@ public class AutoGsonAdapterGenerator extends Generator {
 
     private void validateFieldAnnotations(Element field) throws ProcessingException {
         // For now, we only ensure that the flatten annotation is only added to a String.
-        if (field.getAnnotation(GsonFlatten.class) == null) {
+        if (field.getAnnotation(FlattenJson.class) == null) {
             return;
         }
 
         if (!ProcessorUtil.getElementType(field).equals(STRING_CLASS_PATH)) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "GsonFlatten can only be used on String variables");
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "FlattenObject can only be used on String variables");
             throw new ProcessingException();
         }
     }

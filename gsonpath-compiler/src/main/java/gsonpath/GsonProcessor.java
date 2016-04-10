@@ -49,7 +49,7 @@ public class GsonProcessor extends AbstractProcessor {
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> supportedTypes = new LinkedHashSet<>();
         supportedTypes.add(AutoGsonAdapter.class.getCanonicalName());
-        supportedTypes.add(GsonFlatten.class.getCanonicalName());
+        supportedTypes.add(FlattenJson.class.getCanonicalName());
         supportedTypes.add(SerializedName.class.getCanonicalName());
         return supportedTypes;
     }
