@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class GsonPathUtil {
 
-    private static boolean isValidValue(JsonReader in) throws IOException {
+    public static boolean isValidValue(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {
             in.skipValue();
             return false;

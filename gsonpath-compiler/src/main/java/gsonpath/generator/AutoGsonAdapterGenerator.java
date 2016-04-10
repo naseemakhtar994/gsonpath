@@ -192,7 +192,7 @@ public class AutoGsonAdapterGenerator extends Generator {
             mCounterVariableCount = 0;
             mSafeVariableCount = 0;
 
-            createObjectParser(codeBlock, rootElements);
+            createObjectParser(0, codeBlock, rootElements);
         }
 
         // Final block of code.
@@ -227,9 +227,22 @@ public class AutoGsonAdapterGenerator extends Generator {
         builder.addStaticImport(GsonPathUtil.class, "*");
     }
 
-    private void createObjectParser(CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
+    private void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
         String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
+
+        //
+        // Ensure a Json object exists begin attempting to read it.
+        // Since we are within a switch statement, we need to break out.
+        //
+        if (fieldDepth > 0) {
+            codeBlock.add("\n");
+            codeBlock.add("// Ensure the object is not null.\n");
+            codeBlock.beginControlFlow("if (!isValidValue(in))");
+            codeBlock.addStatement("break");
+            codeBlock.endControlFlow();
+            codeBlock.add("\n");
+        }
 
         codeBlock.addStatement("int $L = 0", counterVariableName);
         codeBlock.addStatement("in.beginObject()");
@@ -306,7 +319,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                 }
 
             } else {
-                createObjectParser(codeBlock, (Map<String, Object>) value);
+                createObjectParser(fieldDepth + 1, codeBlock, (Map<String, Object>) value);
             }
             codeBlock.addStatement("break");
             codeBlock.add("\n");
@@ -322,6 +335,9 @@ public class AutoGsonAdapterGenerator extends Generator {
         codeBlock.endControlFlow();
         codeBlock.endControlFlow();
         codeBlock.add("\n");
+
+        codeBlock.add("\n");
+
         codeBlock.addStatement("in.endObject()");
     }
 
