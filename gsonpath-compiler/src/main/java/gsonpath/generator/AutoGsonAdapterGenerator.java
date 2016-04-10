@@ -157,6 +157,14 @@ public class AutoGsonAdapterGenerator extends Generator {
             }
 
             if (jsonObjectName.contains(".")) {
+                //
+                // When the last character is a dot, we should append the variable name to
+                // the end of the field name, as this may reduce annotation repetition.
+                //
+                if (jsonObjectName.charAt(jsonObjectName.length() - 1) == '.') {
+                    jsonObjectName += fieldName;
+                }
+
                 String[] split = jsonObjectName.split("\\.");
                 int lastIndex = split.length - 1;
 

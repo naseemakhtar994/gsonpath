@@ -106,6 +106,83 @@ public class GsonProcessorTest {
     }
 
     @Test
+    public void testGsonPathWithPartialFieldName() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                "@AutoGsonAdapter",
+                "public class Test {",
+                "    @GsonPathField(\"Json1.\")",
+                "    public int value1;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        STANDARD_RESULT_HEADER,
+                        "int jsonFieldCounter0 = 0;",
+                        "in.beginObject();",
+                        "",
+                        "while (in.hasNext()) {",
+                        "    if (jsonFieldCounter0 == 1) {",
+                        "        in.skipValue();",
+                        "        continue;",
+                        "    }",
+                        "",
+                        "    switch(in.nextName()) {",
+                        "        case \"Json1\":",
+                        "            jsonFieldCounter0++;",
+                        "",
+                        "            // Ensure the object is not null.",
+                        "            if (!isValidValue(in)) {",
+                        "                break;",
+                        "            }",
+                        "",
+                        "            int jsonFieldCounter1 = 0;",
+                        "            in.beginObject();",
+                        "",
+                        "            while (in.hasNext()) {",
+                        "                if (jsonFieldCounter1 == 1) {",
+                        "                    in.skipValue();",
+                        "                    continue;",
+                        "                }",
+                        "",
+                        "                switch(in.nextName()) {",
+                        "                    case \"value1\":",
+                        "                        jsonFieldCounter1++;",
+                        "                        result.value1 = in.nextInt();",
+                        "                        break;",
+                        "",
+                        "                    default:",
+                        "                        in.skipValue();",
+                        "                        break;",
+                        "                }",
+                        "            }",
+                        "",
+                        "            in.endObject();",
+                        "            break;",
+                        "",
+                        "        default:",
+                        "            in.skipValue();",
+                        "            break;",
+                        "    }",
+                        "}",
+                        "",
+                        "in.endObject();",
+                        STANDARD_RESULT_FOOTER
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
     public void testGsonPathWithPrimitives() {
 
         JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
