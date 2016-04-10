@@ -1,7 +1,7 @@
 package gsonpath.generated;
 
+import com.google.gson.annotations.SerializedName;
 import gsonpath.AutoGsonAdapter;
-import gsonpath.GsonPathField;
 
 /**
  * Created by Lachlan on 18/03/2016.
@@ -12,10 +12,10 @@ public class PeopleModelGenerated {
 
     @AutoGsonAdapter(rootField = "person.names")
     public static class PersonModel {
-        @GsonPathField("first")
+        @SerializedName("first")
         public String firstName;
 
-        @GsonPathField("last")
+        @SerializedName("last")
         public String lastName;
     }
 }

@@ -14,6 +14,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
+import com.google.gson.annotations.SerializedName;
 import gsonpath.generator.AutoGsonAdapterGenerator;
 import gsonpath.generator.HandleResult;
 import gsonpath.generator.LoaderGenerator;
@@ -48,7 +49,8 @@ public class GsonProcessor extends AbstractProcessor {
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> supportedTypes = new LinkedHashSet<>();
         supportedTypes.add(AutoGsonAdapter.class.getCanonicalName());
-        supportedTypes.add(GsonPathField.class.getCanonicalName());
+        supportedTypes.add(GsonFlatten.class.getCanonicalName());
+        supportedTypes.add(SerializedName.class.getCanonicalName());
         return supportedTypes;
     }
 

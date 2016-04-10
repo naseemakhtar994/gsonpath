@@ -1,20 +1,20 @@
 package gsonpath.generated;
 
+import com.google.gson.annotations.SerializedName;
 import gsonpath.AutoGsonAdapter;
-import gsonpath.GsonPathField;
 
 /**
  * Created by Lachlan on 13/03/2016.
  */
 @AutoGsonAdapter(rootField = "store")
 public class StoreModel {
-    @GsonPathField("book")
+    @SerializedName("book")
     public BookModel[] bookList;
 
-    @GsonPathField("bicycle.color")
+    @SerializedName("bicycle.color")
     public String bikeColour;
 
-    @GsonPathField("bicycle.price")
+    @SerializedName("bicycle.price")
     public double bikePrice;
 
     @AutoGsonAdapter

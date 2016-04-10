@@ -1,6 +1,7 @@
 package gsonpath.generator;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.squareup.javapoet.ClassName;
@@ -25,12 +26,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
-import gsonpath.AutoGsonAdapter;
-import gsonpath.GsonPathExclude;
-import gsonpath.GsonPathField;
-import gsonpath.GsonPathUtil;
-import gsonpath.ProcessingException;
-import gsonpath.ProcessorUtil;
+import gsonpath.*;
 
 /**
  * Created by Lachlan on 12/03/2016.
@@ -39,6 +35,7 @@ public class AutoGsonAdapterGenerator extends Generator {
     private static final String ADAPTER_SUFFIX = "_GsonTypeAdapter";
 
     private static final String GSON_PACKAGE = "com.google.gson";
+    private static final String STRING_CLASS_PATH = "java.lang.String";
 
     private static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
             "boolean", "int", "long", "double"
@@ -101,12 +98,12 @@ public class AutoGsonAdapterGenerator extends Generator {
                 continue;
             }
 
-            if (fieldsRequireAnnotation && (child.getAnnotation(GsonPathField.class) == null)) {
+            if (fieldsRequireAnnotation && (child.getAnnotation(SerializedName.class) == null)) {
                 continue;
             }
 
             // Ignore any excluded fields
-            if (child.getAnnotation(GsonPathExclude.class) != null) {
+            if (child.getAnnotation(GsonExclude.class) != null) {
                 continue;
             }
 
@@ -117,7 +114,7 @@ public class AutoGsonAdapterGenerator extends Generator {
         Map<String, Object> rootElements = new LinkedHashMap<>();
         Map<String, Object> topLevelFieldMap = rootElements;
 
-        // The root element annotation prevents repetition in the GsonPathField annotation.
+        // The root element annotation prevents repetition in the SerializedName annotation.
         String rootField = autoGsonAnnotation.rootField();
         if (rootField.length() > 0) {
             String[] split = rootField.split("\\.");
@@ -146,7 +143,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                 throw new ProcessingException();
             }
 
-            GsonPathField annotation = field.getAnnotation(GsonPathField.class);
+            SerializedName annotation = field.getAnnotation(SerializedName.class);
             String fieldName = field.getSimpleName().toString();
             String jsonObjectName;
 
@@ -235,7 +232,7 @@ public class AutoGsonAdapterGenerator extends Generator {
         builder.addStaticImport(GsonPathUtil.class, "*");
     }
 
-    private void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) {
+    private void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {
         String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
 
@@ -281,6 +278,9 @@ public class AutoGsonAdapterGenerator extends Generator {
             if (value instanceof Element) {
                 Element field = (Element) value;
 
+                // Make sure the field's annotations don't have any problems.
+                validateFieldAnnotations(field);
+
                 String gsonMethodType = ProcessorUtil.getElementType(field);
                 if (HANDLED_PRIMITIVES.contains(gsonMethodType)) {
 
@@ -292,7 +292,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                     // Add a new line to improve readability for the multi-lined mapping.
                     codeBlock.add("\n");
 
-                    boolean isStringType = gsonMethodType.equals("java.lang.String");
+                    boolean isStringType = gsonMethodType.equals(STRING_CLASS_PATH);
                     boolean callToString = false;
 
                     if (isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonMethodType)) {
@@ -302,8 +302,8 @@ public class AutoGsonAdapterGenerator extends Generator {
                         // Special handling for strings.
                         boolean handled = false;
                         if (isStringType) {
-                            GsonPathField annotation = field.getAnnotation(GsonPathField.class);
-                            if (annotation != null && annotation.collapseJson()) {
+                            GsonFlatten annotation = field.getAnnotation(GsonFlatten.class);
+                            if (annotation != null) {
                                 handled = true;
                                 codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
 
@@ -347,6 +347,18 @@ public class AutoGsonAdapterGenerator extends Generator {
         codeBlock.add("\n");
 
         codeBlock.addStatement("in.endObject()");
+    }
+
+    private void validateFieldAnnotations(Element field) throws ProcessingException {
+        // For now, we only ensure that the flatten annotation is only added to a String.
+        if (field.getAnnotation(GsonFlatten.class) == null) {
+            return;
+        }
+
+        if (!ProcessorUtil.getElementType(field).equals(STRING_CLASS_PATH)) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "GsonFlatten can only be used on String variables");
+            throw new ProcessingException();
+        }
     }
 
 }

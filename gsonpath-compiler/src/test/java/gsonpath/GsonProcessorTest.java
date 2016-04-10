@@ -21,8 +21,9 @@ public class GsonProcessorTest {
     private static final String STANDARD_PACKAGE_NAME = "package com.test;";
 
     private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonAdapter;";
-    private static final String IMPORT_GSON_PATH_ELEMENT = "import gsonpath.GsonPathField;";
-    private static final String IMPORT_GSON_PATH_EXCLUDE = "import gsonpath.GsonPathExclude;";
+    private static final String IMPORT_GSON_PATH_ELEMENT = "import com.google.gson.annotations.SerializedName;";
+    private static final String IMPORT_GSON_PATH_EXCLUDE = "import gsonpath.GsonExclude;";
+    private static final String IMPORT_GSON_PATH_FLATTEN = "import gsonpath.GsonFlatten;";
 
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
             STANDARD_PACKAGE_NAME,
@@ -114,7 +115,7 @@ public class GsonProcessorTest {
                 IMPORT_GSON_PATH_ELEMENT,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonPathField(\"Json1.\")",
+                "    @SerializedName(\"Json1.\")",
                 "    public int value1;",
                 "}"
         ));
@@ -258,7 +259,7 @@ public class GsonProcessorTest {
                 IMPORT_GSON_PATH_ELEMENT,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonPathField(\"Json1\")",
+                "    @SerializedName(\"Json1\")",
                 "    public String value1;",
                 "    public Boolean value2;",
                 "    public Integer value3;",
@@ -352,13 +353,13 @@ public class GsonProcessorTest {
                 IMPORT_GSON_PATH_ELEMENT,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonPathField(\"Json1\")",
+                "    @SerializedName(\"Json1\")",
                 "    public int value1;",
-                "    @GsonPathField(\"Json2.Nest1\")",
+                "    @SerializedName(\"Json2.Nest1\")",
                 "    public int value2;",
-                "    @GsonPathField(\"Json2.Nest2.EndPoint1\")",
+                "    @SerializedName(\"Json2.Nest2.EndPoint1\")",
                 "    public int value3;",
-                "    @GsonPathField(\"Json2.Nest2.EndPoint2\")",
+                "    @SerializedName(\"Json2.Nest2.EndPoint2\")",
                 "    public int value4;",
                 "}"
         ));
@@ -578,7 +579,7 @@ public class GsonProcessorTest {
                 STANDARD_PACKAGE_NAME,
                 IMPORT_GSON_PATH_ELEMENT,
                 "public class BaseTest {",
-                "    @GsonPathField(\"Json1\")",
+                "    @SerializedName(\"Json1\")",
                 "    public int value1;",
                 "}"
         ));
@@ -688,9 +689,11 @@ public class GsonProcessorTest {
                 STANDARD_PACKAGE_NAME,
                 IMPORT_GSON_PATH_CLASS,
                 IMPORT_GSON_PATH_ELEMENT,
+                IMPORT_GSON_PATH_FLATTEN,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonPathField(value = \"Json1\", collapseJson = true)",
+                "    @GsonFlatten",
+                "    @SerializedName(\"Json1\")",
                 "    public String value1;",
                 "}"
         ));
@@ -744,7 +747,7 @@ public class GsonProcessorTest {
                 IMPORT_GSON_PATH_ELEMENT,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonPathField(value = \"Json1\")",
+                "    @SerializedName(value = \"Json1\")",
                 "    public java.util.Currency value1;",
                 "}"
         ));
@@ -815,7 +818,7 @@ public class GsonProcessorTest {
                 "@AutoGsonAdapter",
                 "public class Test {",
                 "    public int element1;",
-                "    @GsonPathExclude",
+                "    @GsonExclude",
                 "    public int element2;",
                 "}"
         ));
@@ -884,7 +887,7 @@ public class GsonProcessorTest {
                 IMPORT_GSON_PATH_ELEMENT,
                 "@AutoGsonAdapter",
                 "public class Test {",
-                "    @GsonPathField(\"element1\")",
+                "    @SerializedName(\"element1\")",
                 "    public java.lang.Object element1;",
                 "}"
         ));

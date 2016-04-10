@@ -26,10 +26,10 @@ We can deserialize the content with a single class by using Gson Path. The follo
 ```java
 @AutoGsonAdapter(rootField = "person.names")
 public class PersonModel {
-    @GsonPathField("first")
+    @SerializedName("first")
     String firstName;
 
-    @GsonPathField("last")
+    @SerializedName("last")
     String lastName;
 }
 ```
