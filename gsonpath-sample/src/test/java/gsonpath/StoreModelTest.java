@@ -19,7 +19,7 @@ public class StoreModelTest {
         builder.registerTypeAdapterFactory(new GsonPathTypeAdapterFactory());
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        InputStream resourceAsStream = classLoader.getResourceAsStream("/BookJson.json");
+        InputStream resourceAsStream = classLoader.getResourceAsStream("BookJson.json");
 
         Gson gson = builder.create();
         StoreModel model = gson.fromJson(new InputStreamReader(resourceAsStream), StoreModel.class);
