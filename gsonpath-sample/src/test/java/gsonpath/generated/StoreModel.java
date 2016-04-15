@@ -3,13 +3,15 @@ package gsonpath.generated;
 import com.google.gson.annotations.SerializedName;
 import gsonpath.AutoGsonAdapter;
 
+import java.util.List;
+
 /**
  * Created by Lachlan on 13/03/2016.
  */
 @AutoGsonAdapter(rootField = "store")
 public class StoreModel {
     @SerializedName("book")
-    public BookModel[] bookList;
+    public List<BookModel> bookList;
 
     @SerializedName("bicycle.color")
     public String bikeColour;

@@ -739,6 +739,61 @@ public class GsonProcessorTest {
     }
 
     @Test
+    public void testGsonGenericFields() {
+
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
+                STANDARD_PACKAGE_NAME,
+                IMPORT_GSON_PATH_CLASS,
+                IMPORT_GSON_PATH_ELEMENT,
+                IMPORT_GSON_PATH_FLATTEN,
+                "@AutoGsonAdapter",
+                "public class Test {",
+                "    @SerializedName(\"Json1\")",
+                "    public java.util.List<String> value1;",
+                "}"
+        ));
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonTypeAdapter",
+                Joiner.on('\n').join(
+                        STANDARD_RESULT_PACKAGE_AND_IMPORTS,
+                        STANDARD_RESULT_HEADER,
+                        "int jsonFieldCounter0 = 0;",
+                        "in.beginObject();",
+                        "",
+                        "while (in.hasNext()) {",
+                        "    if (jsonFieldCounter0 == 1) {",
+                        "        in.skipValue();",
+                        "        continue;",
+                        "    }",
+                        "",
+                        "    switch(in.nextName()) {",
+                        "        case \"Json1\":",
+                        "            jsonFieldCounter0++;",
+                        "",
+                        "            java.util.List<java.lang.String> safeValue0 = mGson.getAdapter(new com.google.gson.reflect.TypeToken<java.util.List<java.lang.String>>(){}).read(in);",
+                        "            if (safeValue0 != null) {",
+                        "                result.value1 = safeValue0;",
+                        "            }",
+                        "            break;",
+                        "",
+                        "        default:",
+                        "            in.skipValue();",
+                        "            break;",
+                        "    }",
+                        "}",
+                        "",
+                        "in.endObject();",
+                        STANDARD_RESULT_FOOTER
+                ));
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
     public void testGsonPathCustomType() {
 
         JavaFileObject source = JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(

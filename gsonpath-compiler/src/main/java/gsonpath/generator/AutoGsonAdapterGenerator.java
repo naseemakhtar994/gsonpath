@@ -315,8 +315,20 @@ public class AutoGsonAdapterGenerator extends Generator {
                             codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
                         }
                     } else {
+                        String adapterName;
+
+                        // TODO: Casting field to 'TypeElement' throws a cast exception, so we need to detect generics in a hacky way at the moment.
+                        boolean isGenericField = gsonMethodType.contains("<");
+                        if (isGenericField) {
+                            // This is a generic type
+                            adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", gsonMethodType);
+
+                        } else {
+                            adapterName = gsonMethodType + ".class";
+                        }
+
                         // Handle every other possible class by falling back onto the gson adapter.
-                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L.class).read(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
+                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)", gsonMethodType, mSafeVariableCount, adapterName);
                     }
 
                     codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
