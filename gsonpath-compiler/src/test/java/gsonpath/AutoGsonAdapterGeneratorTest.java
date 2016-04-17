@@ -16,7 +16,7 @@ import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 /**
  * Created by Lachlan on 2/03/2016.
  */
-public class GsonProcessorTest {
+public class AutoGsonAdapterGeneratorTest {
 
     private static final String STANDARD_PACKAGE_NAME = "package com.test;";
 
@@ -28,7 +28,7 @@ public class GsonProcessorTest {
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
             STANDARD_PACKAGE_NAME,
             "",
-            "import static gsonpath.GsonPathUtil.*;",
+            "import static gsonpath.GsonUtil.*;",
             "",
             "import com.google.gson.Gson;",
             "import com.google.gson.TypeAdapter;",
@@ -952,63 +952,5 @@ public class GsonProcessorTest {
                 .failsToCompile()
                 .withErrorContaining("Invalid field type: java.lang.Object")
                 .in(source).onLine(7);
-    }
-
-    @Test
-    public void testGsonPathGeneratedLoader() {
-
-        JavaFileObject source1 = JavaFileObjects.forSourceString("test.Test1", Joiner.on('\n').join(
-                STANDARD_PACKAGE_NAME,
-                IMPORT_GSON_PATH_CLASS,
-                IMPORT_GSON_PATH_ELEMENT,
-                "@AutoGsonAdapter",
-                "public class Test1 {",
-                "}"
-        ));
-
-        JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test2", Joiner.on('\n').join(
-                STANDARD_PACKAGE_NAME,
-                IMPORT_GSON_PATH_CLASS,
-                IMPORT_GSON_PATH_ELEMENT,
-                "@AutoGsonAdapter",
-                "public class Test2 {",
-                "}"
-        ));
-
-        JavaFileObject expectedSource = JavaFileObjects.forSourceString("gsonpath.GeneratedGsonPathLoader",
-                Joiner.on('\n').join(
-                        "package gsonpath;",
-                        "",
-                        "import com.google.gson.Gson;",
-                        "import com.google.gson.TypeAdapter;",
-                        "import com.google.gson.reflect.TypeToken;",
-                        "import java.lang.Override;",
-                        "",
-                        "public final class GeneratedGsonPathLoader implements GsonPathLoader {",
-                        "    @Override",
-                        "    public TypeAdapter create(Gson gson, TypeToken type) {",
-                        "        Class rawType = type.getRawType();",
-                        "        if (rawType.equals(com.test.Test1.class)) {",
-                        "            return new com.test.Test1_GsonTypeAdapter(gson);",
-                        "",
-                        "        } else if (rawType.equals(com.test.Test2.class)) {",
-                        "            return new com.test.Test2_GsonTypeAdapter(gson);",
-                        "        }",
-                        "",
-                        "        return null;",
-                        "    }",
-                        "}"
-                ));
-
-
-        ArrayList<JavaFileObject> sources = new ArrayList<>();
-        sources.add(source1);
-        sources.add(source2);
-
-        assertAbout(javaSources()).that(sources)
-                .processedWith(new GsonProcessor())
-                .compilesWithoutError()
-                .and()
-                .generatesSources(createEmptyResultSource("Test1"), createEmptyResultSource("Test2"), expectedSource);
     }
 }

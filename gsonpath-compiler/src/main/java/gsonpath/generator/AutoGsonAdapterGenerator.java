@@ -229,7 +229,7 @@ public class AutoGsonAdapterGenerator extends Generator {
 
     @Override
     public void onJavaFileBuilt(JavaFile.Builder builder) {
-        builder.addStaticImport(GsonPathUtil.class, "*");
+        builder.addStaticImport(GsonUtil.class, "*");
     }
 
     private void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {

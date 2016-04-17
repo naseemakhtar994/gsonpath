@@ -8,7 +8,7 @@ import java.io.IOException;
 /**
  * Created by Lachlan on 7/03/2016.
  */
-public class GsonPathUtil {
+public class GsonUtil {
 
     public static boolean isValidValue(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {

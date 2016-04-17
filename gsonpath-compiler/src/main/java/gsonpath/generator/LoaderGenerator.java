@@ -12,7 +12,7 @@ import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 
-import gsonpath.GsonPathLoader;
+import gsonpath.internal.TypeAdapterLoader;
 
 /**
  * Created by Lachlan on 13/03/2016.
@@ -31,7 +31,7 @@ public class LoaderGenerator extends Generator {
         // Create the GsonPathLoader which is used by the GsonPathTypeAdapterFactory class.
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedGsonPathLoader")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addSuperinterface(GsonPathLoader.class);
+                .addSuperinterface(TypeAdapterLoader.class);
 
         //
         // <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type);
