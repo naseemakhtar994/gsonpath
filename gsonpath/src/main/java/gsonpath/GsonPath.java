@@ -11,4 +11,8 @@ public class GsonPath {
         return new GsonPathTypeAdapterFactory();
     }
 
+    public static <T extends ArrayTypeAdapter> T getArrayTypeAdapter(Class<T> type) {
+        return null;
+    }
+
 }
