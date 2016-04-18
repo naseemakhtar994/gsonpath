@@ -91,19 +91,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         // The root element annotation prevents repetition in the SerializedName annotation.
         String rootField = autoGsonAnnotation.rootField();
         if (rootField.length() > 0) {
-            String[] split = rootField.split("\\.");
-
-            if (split.length > 0) {
-                for (String field : split) {
-                    Map<String, Object> mapWithRoot = new LinkedHashMap<>();
-                    topLevelFieldMap.put(field, mapWithRoot);
-                    topLevelFieldMap = mapWithRoot;
-                }
-            } else {
-                Map<String, Object> mapWithRoot = new LinkedHashMap<>();
-                topLevelFieldMap.put(rootField, mapWithRoot);
-                topLevelFieldMap = mapWithRoot;
-            }
+            topLevelFieldMap = getElementsFromRoot(topLevelFieldMap, rootField);
 
         } else {
             topLevelFieldMap = rootElements;

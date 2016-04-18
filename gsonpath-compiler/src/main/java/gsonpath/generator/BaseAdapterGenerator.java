@@ -7,10 +7,7 @@ import gsonpath.ProcessorUtil;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Lachlan on 12/03/2016.
@@ -37,7 +34,38 @@ public abstract class BaseAdapterGenerator extends Generator {
         super(processingEnv);
     }
 
+    Map<String, Object> getElementsFromRoot(Map<String, Object> rootElements, String rootField) {
+        if (rootField.length() > 0) {
+            String[] split = rootField.split("\\.");
+
+            if (split.length > 0) {
+                for (String field : split) {
+                    Map<String, Object> mapWithRoot = new LinkedHashMap<>();
+                    rootElements.put(field, mapWithRoot);
+                    rootElements = mapWithRoot;
+                }
+
+                return rootElements;
+
+            } else {
+                Map<String, Object> mapWithRoot = new LinkedHashMap<>();
+                rootElements.put(rootField, mapWithRoot);
+                return mapWithRoot;
+            }
+        }
+
+        return rootElements;
+    }
+
+    public interface ObjectParserCallback {
+        void onNodeEmpty();
+    }
+
     void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {
+        createObjectParser(fieldDepth, codeBlock, jsonMapping, null);
+    }
+
+    void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, ObjectParserCallback callback) throws ProcessingException {
         String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
 
@@ -72,6 +100,7 @@ public abstract class BaseAdapterGenerator extends Generator {
 
         codeBlock.beginControlFlow("switch (in.nextName())");
 
+        boolean addBreak = true;
         for (String key : jsonMapping.keySet()) {
             codeBlock.add("case \"$L\":\n", key);
             codeBlock.indent();
@@ -144,9 +173,21 @@ public abstract class BaseAdapterGenerator extends Generator {
                 }
 
             } else {
-                createObjectParser(fieldDepth + 1, codeBlock, (Map<String, Object>) value);
+                Map<String, Object> nextLevelMap = (Map<String, Object>) value;
+                if (nextLevelMap.size() == 0) {
+                    if (callback != null) {
+                        callback.onNodeEmpty();
+                        addBreak = false;
+                    }
+                } else {
+                    createObjectParser(fieldDepth + 1, codeBlock, nextLevelMap, callback);
+                }
             }
-            codeBlock.addStatement("break");
+
+            if (addBreak) {
+                codeBlock.addStatement("break");
+            }
+
             codeBlock.add("\n");
             codeBlock.unindent();
         }
