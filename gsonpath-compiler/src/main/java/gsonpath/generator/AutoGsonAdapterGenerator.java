@@ -4,50 +4,24 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeSpec;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.squareup.javapoet.*;
+import gsonpath.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
-
-import gsonpath.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Lachlan on 12/03/2016.
  */
-public class AutoGsonAdapterGenerator extends Generator {
-    private static final String ADAPTER_SUFFIX = "_GsonTypeAdapter";
-
-    private static final String GSON_PACKAGE = "com.google.gson";
-    private static final String STRING_CLASS_PATH = "java.lang.String";
-
-    private static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
-            "boolean", "int", "long", "double"
-    ));
-
-    private static final Set<String> HANDLED_BOXED_PRIMITIVES = new HashSet<>(Arrays.asList(
-            "java.lang.Boolean", "java.lang.Integer", "java.lang.Long", "java.lang.Double"
-    ));
-
-    // Used to avoid naming conflicts.
-    private int mCounterVariableCount;
-    private int mSafeVariableCount;
+public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
     public AutoGsonAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
@@ -64,7 +38,7 @@ public class AutoGsonAdapterGenerator extends Generator {
                 .addStatement("this.$N = $N", "mGson", "gson")
                 .build();
 
-        String adapterClassName = element.getSimpleName() + ADAPTER_SUFFIX;
+        String adapterClassName = element.getSimpleName() + getClassNameSuffix();
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(parameterizedTypeName)
@@ -117,19 +91,7 @@ public class AutoGsonAdapterGenerator extends Generator {
         // The root element annotation prevents repetition in the SerializedName annotation.
         String rootField = autoGsonAnnotation.rootField();
         if (rootField.length() > 0) {
-            String[] split = rootField.split("\\.");
-
-            if (split.length > 0) {
-                for (String field : split) {
-                    Map<String, Object> mapWithRoot = new LinkedHashMap<>();
-                    topLevelFieldMap.put(field, mapWithRoot);
-                    topLevelFieldMap = mapWithRoot;
-                }
-            } else {
-                Map<String, Object> mapWithRoot = new LinkedHashMap<>();
-                topLevelFieldMap.put(rootField, mapWithRoot);
-                topLevelFieldMap = mapWithRoot;
-            }
+            topLevelFieldMap = getElementsFromRoot(topLevelFieldMap, rootField);
 
         } else {
             topLevelFieldMap = rootElements;
@@ -232,136 +194,8 @@ public class AutoGsonAdapterGenerator extends Generator {
         builder.addStaticImport(GsonUtil.class, "*");
     }
 
-    private void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {
-        String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
-        mCounterVariableCount++;
-
-        //
-        // Ensure a Json object exists begin attempting to read it.
-        // Since we are within a switch statement, we need to break out.
-        //
-        if (fieldDepth > 0) {
-            codeBlock.add("\n");
-            codeBlock.add("// Ensure the object is not null.\n");
-            codeBlock.beginControlFlow("if (!isValidValue(in))");
-            codeBlock.addStatement("break");
-            codeBlock.endControlFlow();
-            codeBlock.add("\n");
-        }
-
-        codeBlock.addStatement("int $L = 0", counterVariableName);
-        codeBlock.addStatement("in.beginObject()");
-        codeBlock.add("\n");
-        codeBlock.beginControlFlow("while (in.hasNext())");
-
-        //
-        // Since all the required fields have been mapped, we can avoid calling 'nextName'.
-        // This ends up yielding performance improvements on large datasets depending on
-        // the ordering of the fields within the JSON.
-        //
-        codeBlock.beginControlFlow("if ($L == $L)", counterVariableName, jsonMapping.size());
-        codeBlock.addStatement("in.skipValue()");
-        codeBlock.addStatement("continue");
-        codeBlock.endControlFlow();
-        codeBlock.add("\n");
-
-        codeBlock.beginControlFlow("switch (in.nextName())");
-
-        for (String key : jsonMapping.keySet()) {
-            codeBlock.add("case \"$L\":\n", key);
-            codeBlock.indent();
-
-            // Increment the counter to ensure we track how many fields we have mapped.
-            codeBlock.addStatement("$L++", counterVariableName);
-
-            Object value = jsonMapping.get(key);
-            if (value instanceof Element) {
-                Element field = (Element) value;
-
-                // Make sure the field's annotations don't have any problems.
-                validateFieldAnnotations(field);
-
-                String gsonMethodType = ProcessorUtil.getElementType(field);
-                if (HANDLED_PRIMITIVES.contains(gsonMethodType)) {
-
-                    // Handle primitives.
-                    gsonMethodType = Character.toUpperCase(gsonMethodType.charAt(0)) + gsonMethodType.substring(1);
-                    codeBlock.addStatement("result.$L = in.next$L()", field.getSimpleName().toString(), gsonMethodType);
-
-                } else {
-                    // Add a new line to improve readability for the multi-lined mapping.
-                    codeBlock.add("\n");
-
-                    boolean isStringType = gsonMethodType.equals(STRING_CLASS_PATH);
-                    boolean callToString = false;
-
-                    if (isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonMethodType)) {
-
-                        gsonMethodType = gsonMethodType.replace("java.lang.", "");
-
-                        // Special handling for strings.
-                        boolean handled = false;
-                        if (isStringType) {
-                            FlattenJson annotation = field.getAnnotation(FlattenJson.class);
-                            if (annotation != null) {
-                                handled = true;
-                                codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
-
-                                callToString = true;
-                            }
-                        }
-
-                        if (!handled) {
-                            codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
-                        }
-                    } else {
-                        String adapterName;
-
-                        // TODO: Casting field to 'TypeElement' throws a cast exception, so we need to detect generics in a hacky way at the moment.
-                        boolean isGenericField = gsonMethodType.contains("<");
-                        if (isGenericField) {
-                            // This is a generic type
-                            adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", gsonMethodType);
-
-                        } else {
-                            adapterName = gsonMethodType + ".class";
-                        }
-
-                        // Handle every other possible class by falling back onto the gson adapter.
-                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)", gsonMethodType, mSafeVariableCount, adapterName);
-                    }
-
-                    codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
-                    codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
-                    codeBlock.endControlFlow();
-
-                    mSafeVariableCount++;
-                }
-
-            } else {
-                createObjectParser(fieldDepth + 1, codeBlock, (Map<String, Object>) value);
-            }
-            codeBlock.addStatement("break");
-            codeBlock.add("\n");
-            codeBlock.unindent();
-        }
-
-        codeBlock.add("default:\n");
-        codeBlock.indent();
-        codeBlock.addStatement("in.skipValue()");
-        codeBlock.addStatement("break");
-        codeBlock.unindent();
-
-        codeBlock.endControlFlow();
-        codeBlock.endControlFlow();
-        codeBlock.add("\n");
-
-        codeBlock.add("\n");
-
-        codeBlock.addStatement("in.endObject()");
-    }
-
-    private void validateFieldAnnotations(Element field) throws ProcessingException {
+    @Override
+    void validateFieldAnnotations(Element field) throws ProcessingException {
         // For now, we only ensure that the flatten annotation is only added to a String.
         if (field.getAnnotation(FlattenJson.class) == null) {
             return;
@@ -371,6 +205,11 @@ public class AutoGsonAdapterGenerator extends Generator {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "FlattenObject can only be used on String variables");
             throw new ProcessingException();
         }
+    }
+
+    @Override
+    String getClassNameSuffix() {
+        return "_GsonTypeAdapter";
     }
 
 }

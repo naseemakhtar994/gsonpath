@@ -16,6 +16,7 @@ import javax.lang.model.element.TypeElement;
 
 import com.google.gson.annotations.SerializedName;
 import gsonpath.generator.AutoGsonAdapterGenerator;
+import gsonpath.generator.AutoGsonArrayAdapterGenerator;
 import gsonpath.generator.HandleResult;
 import gsonpath.generator.LoaderGenerator;
 
@@ -29,26 +30,49 @@ public class GsonProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
         Set<? extends Element> generatedAdapters = env.getElementsAnnotatedWith(AutoGsonAdapter.class);
 
+        // Handle the standard type adapters.
         List<HandleResult> autoGsonAdapterResults = new ArrayList<>();
-        AutoGsonAdapterGenerator generator = new AutoGsonAdapterGenerator(processingEnv);
+        AutoGsonAdapterGenerator adapterGenerator = new AutoGsonAdapterGenerator(processingEnv);
         for (Element element : generatedAdapters) {
             System.out.println("Handling element: " + element.getSimpleName());
 
             try {
-                autoGsonAdapterResults.add(generator.handle((TypeElement) element));
+                autoGsonAdapterResults.add(adapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
                 return false;
             }
 
         }
 
-        return new LoaderGenerator(processingEnv).generate(autoGsonAdapterResults);
+        if (autoGsonAdapterResults.size() > 0) {
+            if (!new LoaderGenerator(processingEnv).generate(autoGsonAdapterResults)) {
+                return false;
+            }
+        }
+
+        // Handle the array adapters.
+        Set<? extends Element> generatedArrayAdapters = env.getElementsAnnotatedWith(AutoGsonArrayAdapter.class);
+
+        AutoGsonArrayAdapterGenerator arrayAdapterGenerator = new AutoGsonArrayAdapterGenerator(processingEnv);
+        for (Element element : generatedArrayAdapters) {
+            System.out.println("Handling element: " + element.getSimpleName());
+
+            try {
+                arrayAdapterGenerator.handle((TypeElement) element);
+            } catch (ProcessingException e) {
+                return false;
+            }
+
+        }
+
+        return false;
     }
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> supportedTypes = new LinkedHashSet<>();
         supportedTypes.add(AutoGsonAdapter.class.getCanonicalName());
+        supportedTypes.add(AutoGsonArrayAdapter.class.getCanonicalName());
         supportedTypes.add(FlattenJson.class.getCanonicalName());
         supportedTypes.add(SerializedName.class.getCanonicalName());
         return supportedTypes;
