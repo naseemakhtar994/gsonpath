@@ -13,9 +13,9 @@ public class GsonPathTypeAdapterFactory implements TypeAdapterFactory {
 
     public GsonPathTypeAdapterFactory() {
         try {
-            typeAdapterLoader = (TypeAdapterLoader) Class.forName("gsonpath.GeneratedGsonPathLoader").newInstance();
+            typeAdapterLoader = (TypeAdapterLoader) Class.forName("gsonpath.GeneratedTypeAdapterLoader").newInstance();
         } catch (Exception e) {
-            throw new RuntimeException("Unable to find generated GsonPathLoader");
+            throw new RuntimeException("Unable to find generated TypeAdapterArrayLoader");
         }
     }
 

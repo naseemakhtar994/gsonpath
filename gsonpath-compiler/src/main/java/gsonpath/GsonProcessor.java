@@ -15,10 +15,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
 import com.google.gson.annotations.SerializedName;
-import gsonpath.generator.AutoGsonAdapterGenerator;
-import gsonpath.generator.AutoGsonArrayAdapterGenerator;
-import gsonpath.generator.HandleResult;
-import gsonpath.generator.LoaderGenerator;
+import gsonpath.generator.*;
 
 /**
  * Created by Lachlan on 1/03/2016.
@@ -53,16 +50,23 @@ public class GsonProcessor extends AbstractProcessor {
         // Handle the array adapters.
         Set<? extends Element> generatedArrayAdapters = env.getElementsAnnotatedWith(AutoGsonArrayAdapter.class);
 
+        List<HandleResult> autoGsonArrayAdapterResults = new ArrayList<>();
         AutoGsonArrayAdapterGenerator arrayAdapterGenerator = new AutoGsonArrayAdapterGenerator(processingEnv);
         for (Element element : generatedArrayAdapters) {
             System.out.println("Handling element: " + element.getSimpleName());
 
             try {
-                arrayAdapterGenerator.handle((TypeElement) element);
+                autoGsonArrayAdapterResults.add(arrayAdapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
                 return false;
             }
 
+        }
+
+        if (autoGsonArrayAdapterResults.size() > 0) {
+            if (!new LoaderArrayGenerator(processingEnv).generate(autoGsonArrayAdapterResults)) {
+                return false;
+            }
         }
 
         return false;

@@ -29,7 +29,7 @@ public class LoaderGenerator extends Generator {
         }
 
         // Create the GsonPathLoader which is used by the GsonPathTypeAdapterFactory class.
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedGsonPathLoader")
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedTypeAdapterLoader")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addSuperinterface(TypeAdapterLoader.class);
 

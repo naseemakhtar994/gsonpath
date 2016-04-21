@@ -25,7 +25,7 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
         super(processingEnv);
     }
 
-    public void handle(TypeElement element) throws ProcessingException {
+    public HandleResult handle(TypeElement element) throws ProcessingException {
         // The class must implement the ArrayTypeAdapter interface!
 
         TypeMirror arrayTypeAdapterElement = null;
@@ -39,7 +39,7 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
 
         if (arrayTypeAdapterElement == null) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class must extend " + ArrayTypeAdapter.class.getName());
-            return;
+            throw new ProcessingException();
         }
 
         // Get the actual argument used for json parsing from the interface generics.
@@ -47,12 +47,13 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
         TypeMirror typeMirror = typeGenericArguments.get(0);
 
         final ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(processingEnv.getTypeUtils().asElement(typeMirror));
+        ClassName originalAdapterInterface = ProcessorUtil.getElementJavaPoetClassName(element);
 
         String adapterClassName = element.getSimpleName() + getClassNameSuffix();
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(ParameterizedTypeName.get(ClassName.get(AbstractArrayTypeAdapter.class), elementClassName))
-                .addSuperinterface(ProcessorUtil.getElementJavaPoetClassName(element));
+                .addSuperinterface(originalAdapterInterface);
 
         AutoGsonArrayAdapter autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayAdapter.class);
         String rootField = autoGsonArrayAnnotation.rootField();
@@ -136,9 +137,11 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
         streamMultipleJsonReader.addCode(streamCodeBlock.build());
         typeBuilder.addMethod(streamMultipleJsonReader.build());
 
-        if (!writeFile(ProcessorUtil.getElementPackage(element), typeBuilder)) {
-            throw new ProcessingException();
+        String elementPackagePath = ProcessorUtil.getElementPackage(element);
+        if (writeFile(elementPackagePath, typeBuilder)) {
+            return new HandleResult(originalAdapterInterface, ClassName.get(elementPackagePath, adapterClassName));
         }
+        throw new ProcessingException();
     }
 
     private void addArrayCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
