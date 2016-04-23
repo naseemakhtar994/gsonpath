@@ -1,5 +1,6 @@
 package gsonpath.generator;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import gsonpath.FlattenJson;
 import gsonpath.ProcessingException;
@@ -7,14 +8,13 @@ import gsonpath.ProcessorUtil;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
 import java.util.*;
 
 /**
  * Created by Lachlan on 12/03/2016.
  */
 public abstract class BaseAdapterGenerator extends Generator {
-    private static final String ADAPTER_SUFFIX = "_GsonTypeAdapter";
-
     static final String GSON_PACKAGE = "com.google.gson";
     static final String STRING_CLASS_PATH = "java.lang.String";
 
@@ -209,6 +209,22 @@ public abstract class BaseAdapterGenerator extends Generator {
 
     void validateFieldAnnotations(Element field) throws ProcessingException {
         // Do nothing.
+    }
+
+    String getClassName(TypeElement element) {
+        ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(element);
+
+        //
+        // We need to ensure that nested classes are have include their parent class as part of the name.
+        // Otherwise this could cause file name contention when other nested classes have the same name
+        //
+        String fileName = "";
+        for (String name : elementClassName.simpleNames()) {
+            fileName += name + "_";
+        }
+
+        // Make sure no '.' managed to sneak through!
+        return fileName.replace(".", "_") + getClassNameSuffix();
     }
 
     abstract String getClassNameSuffix();

@@ -49,7 +49,7 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
         final ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(processingEnv.getTypeUtils().asElement(typeMirror));
         ClassName originalAdapterInterface = ProcessorUtil.getElementJavaPoetClassName(element);
 
-        String adapterClassName = element.getSimpleName() + getClassNameSuffix();
+        String adapterClassName = getClassName(element);
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(ParameterizedTypeName.get(ClassName.get(AbstractArrayTypeAdapter.class), elementClassName))
@@ -207,7 +207,7 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
 
     @Override
     String getClassNameSuffix() {
-        return "_ArrayTypeAdapter";
+        return "ArrayTypeAdapter";
     }
 
 }
