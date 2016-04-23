@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Created by Lachlan on 18/04/2016.
  */
-public abstract class AbstractArrayTypeAdapter<T> implements ArrayTypeAdapter<T> {
+public abstract class AbstractGsonArrayStreamer<T> implements GsonArrayStreamer<T> {
     @Override
     public T[] getArray(Gson gson, Reader in) throws JsonSyntaxException {
         return getArray(gson, gson.newJsonReader(in));

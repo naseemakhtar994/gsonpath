@@ -1,11 +1,8 @@
 package gsonpath.generator;
 
-import com.google.gson.Gson;
-import com.google.gson.TypeAdapter;
-import com.google.gson.reflect.TypeToken;
 import com.squareup.javapoet.*;
-import gsonpath.ArrayTypeAdapter;
-import gsonpath.internal.TypeAdapterArrayLoader;
+import gsonpath.GsonArrayStreamer;
+import gsonpath.internal.GsonArrayStreamerLoader;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -14,9 +11,9 @@ import java.util.List;
 /**
  * Created by Lachlan on 13/03/2016.
  */
-public class LoaderArrayGenerator extends Generator {
+public class StreamArrayLoaderGenerator extends Generator {
 
-    public LoaderArrayGenerator(ProcessingEnvironment processingEnv) {
+    public StreamArrayLoaderGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
 
@@ -26,14 +23,14 @@ public class LoaderArrayGenerator extends Generator {
         }
 
         // Create the GsonPathLoader which is used by the GsonPathTypeAdapterFactory class.
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedTypeAdapterArrayLoader")
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedGsonArrayStreamerLoader")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addSuperinterface(TypeAdapterArrayLoader.class);
+                .addSuperinterface(GsonArrayStreamerLoader.class);
 
         //
-        // <T extends ArrayTypeAdapter> T get(Class<T> type);
+        // <T extends GsonArrayStreamer> T get(Class<T> type);
         //
-        TypeVariableName typeVariableName = TypeVariableName.get("T", ArrayTypeAdapter.class);
+        TypeVariableName typeVariableName = TypeVariableName.get("T", GsonArrayStreamer.class);
         MethodSpec.Builder getMethod = MethodSpec.methodBuilder("get")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)

@@ -42,29 +42,29 @@ public class GsonProcessor extends AbstractProcessor {
         }
 
         if (autoGsonAdapterResults.size() > 0) {
-            if (!new LoaderGenerator(processingEnv).generate(autoGsonAdapterResults)) {
+            if (!new TypeAdapterLoaderGenerator(processingEnv).generate(autoGsonAdapterResults)) {
                 return false;
             }
         }
 
         // Handle the array adapters.
-        Set<? extends Element> generatedArrayAdapters = env.getElementsAnnotatedWith(AutoGsonArrayAdapter.class);
+        Set<? extends Element> generatedArrayAdapters = env.getElementsAnnotatedWith(AutoGsonArrayStreamer.class);
 
-        List<HandleResult> autoGsonArrayAdapterResults = new ArrayList<>();
-        AutoGsonArrayAdapterGenerator arrayAdapterGenerator = new AutoGsonArrayAdapterGenerator(processingEnv);
+        List<HandleResult> AutoGsonArrayStreamerResults = new ArrayList<>();
+        GsonArrayStreamerGenerator arrayAdapterGenerator = new GsonArrayStreamerGenerator(processingEnv);
         for (Element element : generatedArrayAdapters) {
             System.out.println("Handling element: " + element.getSimpleName());
 
             try {
-                autoGsonArrayAdapterResults.add(arrayAdapterGenerator.handle((TypeElement) element));
+                AutoGsonArrayStreamerResults.add(arrayAdapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
                 return false;
             }
 
         }
 
-        if (autoGsonArrayAdapterResults.size() > 0) {
-            if (!new LoaderArrayGenerator(processingEnv).generate(autoGsonArrayAdapterResults)) {
+        if (AutoGsonArrayStreamerResults.size() > 0) {
+            if (!new StreamArrayLoaderGenerator(processingEnv).generate(AutoGsonArrayStreamerResults)) {
                 return false;
             }
         }
@@ -76,7 +76,7 @@ public class GsonProcessor extends AbstractProcessor {
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> supportedTypes = new LinkedHashSet<>();
         supportedTypes.add(AutoGsonAdapter.class.getCanonicalName());
-        supportedTypes.add(AutoGsonArrayAdapter.class.getCanonicalName());
+        supportedTypes.add(AutoGsonArrayStreamer.class.getCanonicalName());
         supportedTypes.add(FlattenJson.class.getCanonicalName());
         supportedTypes.add(SerializedName.class.getCanonicalName());
         return supportedTypes;

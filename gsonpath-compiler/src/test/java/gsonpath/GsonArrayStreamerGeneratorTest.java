@@ -12,12 +12,12 @@ import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 /**
  * Created by Lachlan on 2/03/2016.
  */
-public class AutoGsonArrayAdapterGeneratorTest {
+public class GsonArrayStreamerGeneratorTest {
 
     private static final String STANDARD_PACKAGE_NAME = "package com.test;";
 
-    private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonArrayAdapter;";
-    private static final String IMPORT_GSON_PATH_ADAPTER = "import gsonpath.ArrayTypeAdapter;";
+    private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonArrayStreamer;";
+    private static final String IMPORT_GSON_PATH_ADAPTER = "import gsonpath.GsonArrayStreamer;";
     private static final String IMPORT_GSON_PATH_ELEMENT = "import com.google.gson.annotations.SerializedName;";
 
     private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
@@ -36,7 +36,7 @@ public class AutoGsonArrayAdapterGeneratorTest {
 
     private static String createResultHeader(String adapterName, String pojoClassName) {
         return Joiner.on('\n').join(
-                "public final class " + adapterName + "_ArrayTypeAdapter implements " + pojoClassName + " {",
+                "public final class " + adapterName + "_GsonArrayStreamer implements " + pojoClassName + " {",
                 "    private final Gson mGson;",
                 "",
                 "    public " + adapterName + "_GsonTypeAdapter(Gson gson) {",
@@ -74,12 +74,12 @@ public class AutoGsonArrayAdapterGeneratorTest {
                 IMPORT_GSON_PATH_CLASS,
                 IMPORT_GSON_PATH_ADAPTER,
                 IMPORT_GSON_PATH_ELEMENT,
-                "@AutoGsonArrayAdapter",
-                "public interface Test extends ArrayTypeAdapter<java.lang.String> {",
+                "@AutoGsonArrayStreamer",
+                "public interface Test extends GsonArrayStreamer<java.lang.String> {",
                 "}"
         ));
 
-        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_ArrayTypeAdapter",
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_GsonArrayStreamer",
                 Joiner.on('\n').join(
                         STANDARD_RESULT_PACKAGE_AND_IMPORTS,
                         STANDARD_RESULT_HEADER,

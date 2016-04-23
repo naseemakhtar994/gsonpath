@@ -13,7 +13,7 @@ import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 /**
  * Created by Lachlan on 2/03/2016.
  */
-public class LoaderGeneratorTest {
+public class TypeAdapterLoaderGeneratorTest {
 
     private static final String STANDARD_PACKAGE_NAME = "package com.test;";
 

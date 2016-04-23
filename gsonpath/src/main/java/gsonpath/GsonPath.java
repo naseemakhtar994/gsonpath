@@ -1,7 +1,7 @@
 package gsonpath;
 
+import gsonpath.internal.GsonArrayStreamerFactory;
 import gsonpath.internal.GsonPathTypeAdapterFactory;
-import gsonpath.internal.GsonPathTypeArrayAdapterFactory;
 
 /**
  * Created by Lachlan on 16/04/2016.
@@ -12,12 +12,12 @@ public class GsonPath {
         return new GsonPathTypeAdapterFactory();
     }
 
-    public static GsonPathTypeArrayAdapterFactory getArrayTypeAdapterFactory() {
-        return new GsonPathTypeArrayAdapterFactory();
+    public static GsonArrayStreamerFactory getGsonArrayStreamerFactory() {
+        return new GsonArrayStreamerFactory();
     }
 
-    public static <T extends ArrayTypeAdapter> T getArrayTypeAdapter(Class<T> type) {
-        return getArrayTypeAdapterFactory().get(type);
+    public static <T extends GsonArrayStreamer> T getArrayStreamer(Class<T> type) {
+        return getGsonArrayStreamerFactory().get(type);
     }
 
 }
