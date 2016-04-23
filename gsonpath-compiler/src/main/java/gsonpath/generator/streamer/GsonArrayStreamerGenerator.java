@@ -1,10 +1,12 @@
-package gsonpath.generator;
+package gsonpath.generator.streamer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import com.squareup.javapoet.*;
 import gsonpath.*;
+import gsonpath.generator.BaseAdapterGenerator;
+import gsonpath.generator.HandleResult;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -212,7 +214,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
     }
 
     @Override
-    String getClassNameSuffix() {
+    protected String getClassNameSuffix() {
         return "GsonArrayStreamer";
     }
 

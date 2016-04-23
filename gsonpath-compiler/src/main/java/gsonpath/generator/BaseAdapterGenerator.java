@@ -15,8 +15,8 @@ import java.util.*;
  * Created by Lachlan on 12/03/2016.
  */
 public abstract class BaseAdapterGenerator extends Generator {
-    static final String GSON_PACKAGE = "com.google.gson";
-    static final String STRING_CLASS_PATH = "java.lang.String";
+    protected static final String GSON_PACKAGE = "com.google.gson";
+    protected static final String STRING_CLASS_PATH = "java.lang.String";
 
     static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
             "boolean", "int", "long", "double"
@@ -27,14 +27,14 @@ public abstract class BaseAdapterGenerator extends Generator {
     ));
 
     // Used to avoid naming conflicts.
-    int mCounterVariableCount;
-    int mSafeVariableCount;
+    protected int mCounterVariableCount;
+    protected int mSafeVariableCount;
 
     public BaseAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
 
-    Map<String, Object> getElementsFromRoot(Map<String, Object> rootElements, String rootField) {
+    protected Map<String, Object> getElementsFromRoot(Map<String, Object> rootElements, String rootField) {
         if (rootField.length() > 0) {
             String[] split = rootField.split("\\.");
 
@@ -61,11 +61,11 @@ public abstract class BaseAdapterGenerator extends Generator {
         void onNodeEmpty();
     }
 
-    void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {
+    protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {
         createObjectParser(fieldDepth, codeBlock, jsonMapping, null);
     }
 
-    void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, ObjectParserCallback callback) throws ProcessingException {
+    protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, ObjectParserCallback callback) throws ProcessingException {
         String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
 
@@ -207,11 +207,11 @@ public abstract class BaseAdapterGenerator extends Generator {
         codeBlock.addStatement("in.endObject()");
     }
 
-    void validateFieldAnnotations(Element field) throws ProcessingException {
+    protected void validateFieldAnnotations(Element field) throws ProcessingException {
         // Do nothing.
     }
 
-    String getClassName(TypeElement element) {
+    protected String getClassName(TypeElement element) {
         ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(element);
 
         //
@@ -227,6 +227,6 @@ public abstract class BaseAdapterGenerator extends Generator {
         return fileName.replace(".", "_") + getClassNameSuffix();
     }
 
-    abstract String getClassNameSuffix();
+    protected abstract String getClassNameSuffix();
 
 }

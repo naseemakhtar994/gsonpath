@@ -1,8 +1,9 @@
-package gsonpath;
+package gsonpath.generator.adapter;
 
 import com.google.common.base.Joiner;
 import com.google.testing.compile.JavaFileObjects;
 
+import gsonpath.GsonProcessor;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -90,7 +91,7 @@ public class AutoGsonAdapterGeneratorTest {
     }
 
     /**
-     * Tests the output generated when only a {@link AutoGsonAdapter} annotation is used.
+     * Tests the output generated when only a {@link gsonpath.AutoGsonAdapter} annotation is used.
      */
     @Test
     public void testAutoGsonAdapterOnly() {

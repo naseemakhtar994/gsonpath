@@ -1,7 +1,9 @@
-package gsonpath.generator;
+package gsonpath.generator.streamer;
 
 import com.squareup.javapoet.*;
 import gsonpath.GsonArrayStreamer;
+import gsonpath.generator.Generator;
+import gsonpath.generator.HandleResult;
 import gsonpath.internal.GsonArrayStreamerLoader;
 
 import javax.annotation.processing.ProcessingEnvironment;

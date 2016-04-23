@@ -16,6 +16,10 @@ import javax.lang.model.element.TypeElement;
 
 import com.google.gson.annotations.SerializedName;
 import gsonpath.generator.*;
+import gsonpath.generator.adapter.AutoGsonAdapterGenerator;
+import gsonpath.generator.adapter.TypeAdapterLoaderGenerator;
+import gsonpath.generator.streamer.GsonArrayStreamerGenerator;
+import gsonpath.generator.streamer.StreamArrayLoaderGenerator;
 
 /**
  * Created by Lachlan on 1/03/2016.

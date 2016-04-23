@@ -1,4 +1,4 @@
-package gsonpath.generator;
+package gsonpath.generator.adapter;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -6,6 +6,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.squareup.javapoet.*;
 import gsonpath.*;
+import gsonpath.generator.BaseAdapterGenerator;
+import gsonpath.generator.HandleResult;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -195,7 +197,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     }
 
     @Override
-    void validateFieldAnnotations(Element field) throws ProcessingException {
+    protected void validateFieldAnnotations(Element field) throws ProcessingException {
         // For now, we only ensure that the flatten annotation is only added to a String.
         if (field.getAnnotation(FlattenJson.class) == null) {
             return;
@@ -208,7 +210,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     }
 
     @Override
-    String getClassNameSuffix() {
+    protected String getClassNameSuffix() {
         return "GsonTypeAdapter";
     }
 

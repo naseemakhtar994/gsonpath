@@ -1,7 +1,8 @@
-package gsonpath;
+package gsonpath.generator.adapter;
 
 import com.google.common.base.Joiner;
 import com.google.testing.compile.JavaFileObjects;
+import gsonpath.GsonProcessor;
 import org.junit.Test;
 
 import javax.tools.JavaFileObject;

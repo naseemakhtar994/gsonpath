@@ -1,7 +1,8 @@
-package gsonpath;
+package gsonpath.generator.streamer;
 
 import com.google.common.base.Joiner;
 import com.google.testing.compile.JavaFileObjects;
+import gsonpath.GsonProcessor;
 import org.junit.Test;
 
 import javax.tools.JavaFileObject;
@@ -19,52 +20,6 @@ public class GsonArrayStreamerGeneratorTest {
     private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonArrayStreamer;";
     private static final String IMPORT_GSON_PATH_ADAPTER = "import gsonpath.GsonArrayStreamer;";
     private static final String IMPORT_GSON_PATH_ELEMENT = "import com.google.gson.annotations.SerializedName;";
-
-    private static final String STANDARD_RESULT_PACKAGE_AND_IMPORTS = Joiner.on('\n').join(
-            STANDARD_PACKAGE_NAME,
-            "",
-            "import static gsonpath.GsonUtil.*;",
-            "",
-            "import com.google.gson.Gson;",
-            "import com.google.gson.TypeAdapter;",
-            "import com.google.gson.stream.JsonReader;",
-            "import com.google.gson.stream.JsonWriter;",
-            "import java.io.IOException;",
-            "import java.lang.Override;",
-            ""
-    );
-
-    private static String createResultHeader(String adapterName, String pojoClassName) {
-        return Joiner.on('\n').join(
-                "public final class " + adapterName + "_GsonArrayStreamer implements " + pojoClassName + " {",
-                "    private final Gson mGson;",
-                "",
-                "    public " + adapterName + "_GsonTypeAdapter(Gson gson) {",
-                "        this.mGson = gson;",
-                "    }",
-                "",
-                "    @Override",
-                "    public " + pojoClassName + " read(JsonReader in) throws IOException {",
-                "        " + pojoClassName + " result = new " + pojoClassName + "();"
-        );
-    }
-
-    private static final String STANDARD_RESULT_HEADER = createResultHeader("Test", "Test");
-
-    private static String createResultFooter(String className) {
-        return Joiner.on('\n').join(
-                "        return result;",
-                "    }",
-                "",
-                "    @Override",
-                "    public void write(JsonWriter out, " + className + " value) throws IOException {",
-                "        // GsonPath does not support writing at this stage.",
-                "    }",
-                "}"
-        );
-    }
-
-    private static final String STANDARD_RESULT_FOOTER = createResultFooter("Test");
 
     @Test
     public void testArrayAdapterNoRoot() {

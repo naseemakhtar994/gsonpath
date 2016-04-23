@@ -1,4 +1,4 @@
-package gsonpath.generator;
+package gsonpath.generator.adapter;
 
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
@@ -12,6 +12,8 @@ import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 
+import gsonpath.generator.Generator;
+import gsonpath.generator.HandleResult;
 import gsonpath.internal.TypeAdapterLoader;
 
 /**
