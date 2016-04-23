@@ -120,7 +120,13 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
                 }
             });
         } else {
+            streamCodeBlock.beginControlFlow("try");
+
             addStreamCodeBlock(streamCodeBlock, elementClassName);
+
+            streamCodeBlock.nextControlFlow("catch ($T e)", ClassName.get(IOException.class));
+            streamCodeBlock.addStatement("throw new $T(e)", ClassName.get(JsonSyntaxException.class));
+            streamCodeBlock.endControlFlow();
         }
 
         streamCodeBlock.add("\n");
