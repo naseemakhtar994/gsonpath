@@ -38,7 +38,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 .addStatement("this.$N = $N", "mGson", "gson")
                 .build();
 
-        String adapterClassName = element.getSimpleName() + getClassNameSuffix();
+        String adapterClassName = getClassName(element);
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(parameterizedTypeName)
@@ -209,7 +209,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
     @Override
     String getClassNameSuffix() {
-        return "_GsonTypeAdapter";
+        return "GsonTypeAdapter";
     }
 
 }

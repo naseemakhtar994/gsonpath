@@ -646,10 +646,10 @@ public class AutoGsonAdapterGeneratorTest {
                 "}"
         ));
 
-        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.NestedTest_GsonTypeAdapter",
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test.Test_NestedTest_GsonTypeAdapter",
                 Joiner.on('\n').join(
                         STANDARD_RESULT_PACKAGE_AND_IMPORTS,
-                        createResultHeader("NestedTest", "Test.NestedTest"),
+                        createResultHeader("Test_NestedTest", "Test.NestedTest"),
                         "int jsonFieldCounter0 = 0;",
                         "in.beginObject();",
                         "",

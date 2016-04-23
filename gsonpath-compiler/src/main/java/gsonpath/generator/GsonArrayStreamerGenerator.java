@@ -19,42 +19,43 @@ import java.util.Map;
 /**
  * Created by Lachlan on 12/03/2016.
  */
-public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
+public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
-    public AutoGsonArrayAdapterGenerator(ProcessingEnvironment processingEnv) {
+    public GsonArrayStreamerGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
 
-    public void handle(TypeElement element) throws ProcessingException {
-        // The class must implement the ArrayTypeAdapter interface!
+    public HandleResult handle(TypeElement element) throws ProcessingException {
+        // The class must implement the GsonArrayStreamer interface!
 
-        TypeMirror arrayTypeAdapterElement = null;
+        TypeMirror GsonArrayStreamerElement = null;
         for (TypeMirror typeMirror : element.getInterfaces()) {
             TypeElement interfaceElement = (TypeElement) processingEnv.getTypeUtils().asElement(typeMirror);
 
-            if (ProcessorUtil.getElementJavaPoetClassName(interfaceElement).equals(ClassName.get(ArrayTypeAdapter.class))) {
-                arrayTypeAdapterElement = typeMirror;
+            if (ProcessorUtil.getElementJavaPoetClassName(interfaceElement).equals(ClassName.get(GsonArrayStreamer.class))) {
+                GsonArrayStreamerElement = typeMirror;
             }
         }
 
-        if (arrayTypeAdapterElement == null) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class must extend " + ArrayTypeAdapter.class.getName());
-            return;
+        if (GsonArrayStreamerElement == null) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class must extend " + GsonArrayStreamer.class.getName());
+            throw new ProcessingException();
         }
 
         // Get the actual argument used for json parsing from the interface generics.
-        List<TypeMirror> typeGenericArguments = ProcessorUtil.getTypeGenericArguments(arrayTypeAdapterElement);
+        List<TypeMirror> typeGenericArguments = ProcessorUtil.getTypeGenericArguments(GsonArrayStreamerElement);
         TypeMirror typeMirror = typeGenericArguments.get(0);
 
         final ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(processingEnv.getTypeUtils().asElement(typeMirror));
+        ClassName originalAdapterInterface = ProcessorUtil.getElementJavaPoetClassName(element);
 
-        String adapterClassName = element.getSimpleName() + getClassNameSuffix();
+        String adapterClassName = getClassName(element);
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .superclass(ParameterizedTypeName.get(ClassName.get(AbstractArrayTypeAdapter.class), elementClassName))
-                .addSuperinterface(ProcessorUtil.getElementJavaPoetClassName(element));
+                .superclass(ParameterizedTypeName.get(ClassName.get(AbstractGsonArrayStreamer.class), elementClassName))
+                .addSuperinterface(originalAdapterInterface);
 
-        AutoGsonArrayAdapter autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayAdapter.class);
+        AutoGsonArrayStreamer autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayStreamer.class);
         String rootField = autoGsonArrayAnnotation.rootField();
 
         Map<String, Object> rootElements = new LinkedHashMap<>();
@@ -103,7 +104,7 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
         // Stream results, multiple - json reader.
         MethodSpec.Builder streamMultipleJsonReader = createBasicBuilder("streamArraySegmented", null);
         streamMultipleJsonReader.addParameter(TypeName.INT, "streamSize");
-        streamMultipleJsonReader.addParameter(ParameterizedTypeName.get(ClassName.get(StreamCallback.class), ArrayTypeName.of(elementClassName)), "callback");
+        streamMultipleJsonReader.addParameter(ParameterizedTypeName.get(ClassName.get(GsonArrayStreamer.StreamCallback.class), ArrayTypeName.of(elementClassName)), "callback");
 
         final CodeBlock.Builder streamCodeBlock = CodeBlock.builder();
         streamCodeBlock.addStatement("$T[] results = new $T[streamSize]", elementClassName, elementClassName);
@@ -119,7 +120,13 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
                 }
             });
         } else {
+            streamCodeBlock.beginControlFlow("try");
+
             addStreamCodeBlock(streamCodeBlock, elementClassName);
+
+            streamCodeBlock.nextControlFlow("catch ($T e)", ClassName.get(IOException.class));
+            streamCodeBlock.addStatement("throw new $T(e)", ClassName.get(JsonSyntaxException.class));
+            streamCodeBlock.endControlFlow();
         }
 
         streamCodeBlock.add("\n");
@@ -136,9 +143,11 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
         streamMultipleJsonReader.addCode(streamCodeBlock.build());
         typeBuilder.addMethod(streamMultipleJsonReader.build());
 
-        if (!writeFile(ProcessorUtil.getElementPackage(element), typeBuilder)) {
-            throw new ProcessingException();
+        String elementPackagePath = ProcessorUtil.getElementPackage(element);
+        if (writeFile(elementPackagePath, typeBuilder)) {
+            return new HandleResult(originalAdapterInterface, ClassName.get(elementPackagePath, adapterClassName));
         }
+        throw new ProcessingException();
     }
 
     private void addArrayCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
@@ -204,7 +213,7 @@ public class AutoGsonArrayAdapterGenerator extends BaseAdapterGenerator {
 
     @Override
     String getClassNameSuffix() {
-        return "_ArrayTypeAdapter";
+        return "GsonArrayStreamer";
     }
 
 }

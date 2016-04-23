@@ -13,7 +13,7 @@ import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 /**
  * Created by Lachlan on 2/03/2016.
  */
-public class LoaderGeneratorTest {
+public class TypeAdapterLoaderGeneratorTest {
 
     private static final String STANDARD_PACKAGE_NAME = "package com.test;";
 
@@ -41,7 +41,7 @@ public class LoaderGeneratorTest {
                 "}"
         ));
 
-        JavaFileObject expectedSource = JavaFileObjects.forSourceString("gsonpath.GeneratedGsonPathLoader",
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("gsonpath.GeneratedTypeAdapterLoader",
                 Joiner.on('\n').join(
                         "package gsonpath;",
                         "",
@@ -51,7 +51,7 @@ public class LoaderGeneratorTest {
                         "import gsonpath.internal.TypeAdapterLoader;",
                         "import java.lang.Override;",
                         "",
-                        "public final class GeneratedGsonPathLoader implements TypeAdapterLoader {",
+                        "public final class GeneratedTypeAdapterLoader implements TypeAdapterLoader {",
                         "    @Override",
                         "    public TypeAdapter create(Gson gson, TypeToken type) {",
                         "        Class rawType = type.getRawType();",

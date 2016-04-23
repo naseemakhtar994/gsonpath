@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
-public @interface AutoGsonArrayAdapter {
+public @interface AutoGsonArrayStreamer {
     /**
      * By leaving value blank, it is implied that the root
      * of the json is an array instead of an object.

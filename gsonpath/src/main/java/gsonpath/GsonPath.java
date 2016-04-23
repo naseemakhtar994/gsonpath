@@ -1,5 +1,6 @@
 package gsonpath;
 
+import gsonpath.internal.GsonArrayStreamerFactory;
 import gsonpath.internal.GsonPathTypeAdapterFactory;
 
 /**
@@ -11,8 +12,12 @@ public class GsonPath {
         return new GsonPathTypeAdapterFactory();
     }
 
-    public static <T extends ArrayTypeAdapter> T getArrayTypeAdapter(Class<T> type) {
-        return null;
+    public static GsonArrayStreamerFactory getGsonArrayStreamerFactory() {
+        return new GsonArrayStreamerFactory();
+    }
+
+    public static <T extends GsonArrayStreamer> T getArrayStreamer(Class<T> type) {
+        return getGsonArrayStreamerFactory().get(type);
     }
 
 }

@@ -17,9 +17,9 @@ import gsonpath.internal.TypeAdapterLoader;
 /**
  * Created by Lachlan on 13/03/2016.
  */
-public class LoaderGenerator extends Generator {
+public class TypeAdapterLoaderGenerator extends Generator {
 
-    public LoaderGenerator(ProcessingEnvironment processingEnv) {
+    public TypeAdapterLoaderGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
 
@@ -29,7 +29,7 @@ public class LoaderGenerator extends Generator {
         }
 
         // Create the GsonPathLoader which is used by the GsonPathTypeAdapterFactory class.
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedGsonPathLoader")
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("GeneratedTypeAdapterLoader")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addSuperinterface(TypeAdapterLoader.class);
 
