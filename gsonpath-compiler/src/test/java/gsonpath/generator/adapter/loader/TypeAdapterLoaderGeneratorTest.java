@@ -1,4 +1,4 @@
-package gsonpath.generator.adapter;
+package gsonpath.generator.adapter.loader;
 
 import com.google.common.base.Joiner;
 import com.google.testing.compile.JavaFileObjects;
@@ -22,7 +22,7 @@ public class TypeAdapterLoaderGeneratorTest {
     private static final String IMPORT_GSON_PATH_ELEMENT = "import com.google.gson.annotations.SerializedName;";
 
     @Test
-    public void testGsonPathGeneratedLoader() {
+    public void testGeneratedLoader() {
 
         JavaFileObject source1 = JavaFileObjects.forSourceString("test.Test1", Joiner.on('\n').join(
                 STANDARD_PACKAGE_NAME,
