@@ -1,5 +1,6 @@
 package gsonpath.generator.adapter;
 
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
@@ -15,10 +16,10 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * Created by Lachlan on 12/03/2016.
@@ -63,6 +64,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         AutoGsonAdapter autoGsonAnnotation = element.getAnnotation(AutoGsonAdapter.class);
         boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
+        FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -107,14 +109,16 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 throw new ProcessingException();
             }
 
-            SerializedName annotation = field.getAnnotation(SerializedName.class);
+            SerializedName serializedNameAnnotation = field.getAnnotation(SerializedName.class);
             String fieldName = field.getSimpleName().toString();
             String jsonObjectName;
 
-            if (annotation != null && annotation.value().length() > 0) {
-                jsonObjectName = annotation.value();
+            if (serializedNameAnnotation != null && serializedNameAnnotation.value().length() > 0) {
+                jsonObjectName = serializedNameAnnotation.value();
+
             } else {
-                jsonObjectName = fieldName;
+                // Since the serialized annotation wasn't specified, we need to apply the naming policy instead.
+                jsonObjectName = applyFieldNamingPolicy(fieldNamingPolicy, fieldName);
             }
 
             if (jsonObjectName.contains(".")) {
@@ -212,6 +216,34 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     @Override
     protected String getClassNameSuffix() {
         return "GsonTypeAdapter";
+    }
+
+    /**
+     * Applies the gson field naming policy using the given field name.
+     *
+     * @param fieldNamingPolicy the field naming policy to apply
+     * @param fieldName         the name being altered.
+     * @return the altered name.
+     */
+    private String applyFieldNamingPolicy(FieldNamingPolicy fieldNamingPolicy, String fieldName) throws ProcessingException {
+        //
+        // Unfortunately the field naming policy uses a Field parameter to translate name.
+        // As a result, for now it was decided to create a fake field class which supplies the correct name,
+        // as opposed to copying the logic from GSON and potentially breaking compatibility if they add another enum.
+        //
+        Constructor<Field> fieldConstructor = (Constructor<Field>) Field.class.getDeclaredConstructors()[0];
+        fieldConstructor.setAccessible(true);
+        Field fakeField;
+        try {
+            fakeField = fieldConstructor.newInstance(null, fieldName, null, -1, -1, null, null);
+
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error while creating 'fake' field for naming policy.");
+            throw new ProcessingException();
+        }
+
+        // Applies the naming transformation on the input field name.
+        return fieldNamingPolicy.translateName(fakeField);
     }
 
 }
