@@ -10,9 +10,6 @@ import org.junit.Test;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
- * Created by Lachlan on 25/04/2016.
- */
 public class PolymorphismTest {
 
     @Test

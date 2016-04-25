@@ -18,9 +18,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Lachlan on 12/03/2016.
- */
 public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
     public GsonArrayStreamerGenerator(ProcessingEnvironment processingEnv) {

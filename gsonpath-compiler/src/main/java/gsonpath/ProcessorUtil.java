@@ -13,9 +13,6 @@ import javax.lang.model.util.AbstractTypeVisitor6;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
-/**
- * Created by Lachlan on 7/03/2016.
- */
 public class ProcessorUtil {
 
     public static List<? extends Element> getAllFieldElements(TypeElement element, Elements elementsUtil, Types typesUtil) {

@@ -11,9 +11,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import java.util.*;
 
-/**
- * Created by Lachlan on 12/03/2016.
- */
 public abstract class BaseAdapterGenerator extends Generator {
     protected static final String GSON_PACKAGE = "com.google.gson";
     protected static final String STRING_CLASS_PATH = "java.lang.String";
@@ -78,7 +75,7 @@ public abstract class BaseAdapterGenerator extends Generator {
             codeBlock.add("// Ensure the object is not null.\n");
             codeBlock.beginControlFlow("if (!isValidValue(in))");
             codeBlock.addStatement("break");
-            codeBlock.endControlFlow();
+            codeBlock.endControlFlow(); // if
             codeBlock.add("\n");
         }
 
@@ -95,7 +92,7 @@ public abstract class BaseAdapterGenerator extends Generator {
         codeBlock.beginControlFlow("if ($L == $L)", counterVariableName, jsonMapping.size());
         codeBlock.addStatement("in.skipValue()");
         codeBlock.addStatement("continue");
-        codeBlock.endControlFlow();
+        codeBlock.endControlFlow(); // if
         codeBlock.add("\n");
 
         codeBlock.beginControlFlow("switch (in.nextName())");
@@ -167,7 +164,7 @@ public abstract class BaseAdapterGenerator extends Generator {
 
                     codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
                     codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
-                    codeBlock.endControlFlow();
+                    codeBlock.endControlFlow(); // if
 
                     mSafeVariableCount++;
                 }
@@ -198,8 +195,8 @@ public abstract class BaseAdapterGenerator extends Generator {
         codeBlock.addStatement("break");
         codeBlock.unindent();
 
-        codeBlock.endControlFlow();
-        codeBlock.endControlFlow();
+        codeBlock.endControlFlow(); // switch
+        codeBlock.endControlFlow(); // while
         codeBlock.add("\n");
 
         codeBlock.add("\n");

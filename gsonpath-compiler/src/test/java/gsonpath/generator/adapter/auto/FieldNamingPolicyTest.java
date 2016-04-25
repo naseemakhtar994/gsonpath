@@ -4,9 +4,6 @@ import com.google.common.base.Joiner;
 import com.google.gson.FieldNamingPolicy;
 import org.junit.Test;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public class FieldNamingPolicyTest extends BaseAutoTest {
 
     private void testPolicy(FieldNamingPolicy policy, String fieldName, String jsonName) {

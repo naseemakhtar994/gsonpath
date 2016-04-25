@@ -3,9 +3,6 @@ package gsonpath.generator.adapter.auto;
 import com.google.common.base.Joiner;
 import org.junit.Test;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public class NestedClassTest extends BaseAutoTest {
 
     @Test

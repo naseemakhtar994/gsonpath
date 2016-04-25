@@ -9,9 +9,6 @@ import org.junit.Test;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public class StoreModelTest {
     @Test
     public void test() {

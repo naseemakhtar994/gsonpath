@@ -10,9 +10,6 @@ import org.junit.Test;
 
 import java.io.StringReader;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public class PeopleModelTest {
 
     private static final int PEOPLE_SIZE = 50000;

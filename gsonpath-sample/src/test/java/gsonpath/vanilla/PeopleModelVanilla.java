@@ -1,8 +1,5 @@
 package gsonpath.vanilla;
 
-/**
- * Created by Lachlan on 18/03/2016.
- */
 public class PeopleModelVanilla {
     public People[] people;
 

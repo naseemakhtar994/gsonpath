@@ -10,9 +10,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import java.util.List;
 
-/**
- * Created by Lachlan on 13/03/2016.
- */
 public class StreamArrayLoaderGenerator extends Generator {
 
     public StreamArrayLoaderGenerator(ProcessingEnvironment processingEnv) {

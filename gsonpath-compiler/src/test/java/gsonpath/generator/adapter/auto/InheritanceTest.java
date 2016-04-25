@@ -11,9 +11,6 @@ import java.util.ArrayList;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public class InheritanceTest extends BaseAutoTest {
 
     @Test

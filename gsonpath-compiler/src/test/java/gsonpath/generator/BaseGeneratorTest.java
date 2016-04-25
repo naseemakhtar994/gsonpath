@@ -6,9 +6,6 @@ import gsonpath.GsonProcessor;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public abstract class BaseGeneratorTest {
     protected static final String STANDARD_PACKAGE_NAME = "package com.test;";
 

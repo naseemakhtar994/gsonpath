@@ -16,9 +16,6 @@ import gsonpath.generator.Generator;
 import gsonpath.generator.HandleResult;
 import gsonpath.internal.TypeAdapterLoader;
 
-/**
- * Created by Lachlan on 13/03/2016.
- */
 public class TypeAdapterLoaderGenerator extends Generator {
 
     public TypeAdapterLoaderGenerator(ProcessingEnvironment processingEnv) {

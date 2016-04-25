@@ -21,9 +21,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-/**
- * Created by Lachlan on 12/03/2016.
- */
 public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
     public AutoGsonAdapterGenerator(ProcessingEnvironment processingEnv) {

@@ -6,7 +6,16 @@ import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Created by Lachlan on 7/03/2016.
+ * An implementation of {@link TypeAdapterFactory} which exposes the auto generated
+ * {@link com.google.gson.TypeAdapter} classes which are created using the
+ * {@link gsonpath.AutoGsonAdapter} annotation.
+ * <p/>
+ * The creation of the {@link com.google.gson.TypeAdapter} classes is delegated to
+ * another generated class (of type {@link TypeAdapterLoader}) which can create the correct
+ * {@link com.google.gson.TypeAdapter} classes without using any reflection.
+ * <p/>
+ * The factory only uses reflection once, when it needs to obtain this delegated {@link TypeAdapterLoader}
+ * class.
  */
 public class GsonPathTypeAdapterFactory implements TypeAdapterFactory {
     private TypeAdapterLoader typeAdapterLoader;

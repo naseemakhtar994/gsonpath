@@ -6,10 +6,14 @@ import com.google.gson.stream.JsonToken;
 import java.io.IOException;
 
 /**
- * Created by Lachlan on 7/03/2016.
+ * A set of Gson utilities which expose functionality to read content from a JsonReader
+ * safely without throwing IOExceptions.
  */
 public class GsonUtil {
 
+    /**
+     * Determines whether the next value within the reader is not null.
+     */
     public static boolean isValidValue(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {
             in.skipValue();
@@ -18,6 +22,11 @@ public class GsonUtil {
         return true;
     }
 
+    /**
+     * Attempts to obtain the next string value from the reader if possible, otherwise
+     * it will return null.
+     */
+    @SuppressWarnings("unused")
     public static String getStringSafely(JsonReader in) throws IOException {
         if (isValidValue(in)) {
             return in.nextString();
@@ -25,6 +34,11 @@ public class GsonUtil {
         return null;
     }
 
+    /**
+     * Attempts to obtain the next boolean value from the reader if possible, otherwise
+     * it will return null.
+     */
+    @SuppressWarnings("unused")
     public static Boolean getBooleanSafely(JsonReader in) throws IOException {
         if (isValidValue(in)) {
             return in.nextBoolean();
@@ -32,6 +46,11 @@ public class GsonUtil {
         return null;
     }
 
+    /**
+     * Attempts to obtain the next integer value from the reader if possible, otherwise
+     * it will return null.
+     */
+    @SuppressWarnings("unused")
     public static Integer getIntegerSafely(JsonReader in) throws IOException {
         if (isValidValue(in)) {
             return in.nextInt();
@@ -39,6 +58,11 @@ public class GsonUtil {
         return null;
     }
 
+    /**
+     * Attempts to obtain the next long value from the reader if possible, otherwise
+     * it will return null.
+     */
+    @SuppressWarnings("unused")
     public static Long getLongSafely(JsonReader in) throws IOException {
         if (isValidValue(in)) {
             return in.nextLong();
@@ -46,6 +70,11 @@ public class GsonUtil {
         return null;
     }
 
+    /**
+     * Attempts to obtain the next double value from the reader if possible, otherwise
+     * it will return null.
+     */
+    @SuppressWarnings("unused")
     public static Double getDoubleSafely(JsonReader in) throws IOException {
         if (isValidValue(in)) {
             return in.nextDouble();

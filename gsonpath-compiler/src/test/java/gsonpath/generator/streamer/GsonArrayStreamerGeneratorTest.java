@@ -4,9 +4,6 @@ import com.google.common.base.Joiner;
 import gsonpath.generator.BaseGeneratorTest;
 import org.junit.Test;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public class GsonArrayStreamerGeneratorTest extends BaseGeneratorTest {
 
     private static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonArrayStreamer;";

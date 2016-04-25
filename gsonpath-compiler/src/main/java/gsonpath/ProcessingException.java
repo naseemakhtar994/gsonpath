@@ -1,7 +1,7 @@
 package gsonpath;
 
 /**
- * Created by Lachlan on 12/03/2016.
+ * Represents that something has gone wrong during annotation processing.
  */
 public class ProcessingException extends Exception {
 

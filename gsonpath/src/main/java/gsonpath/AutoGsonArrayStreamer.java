@@ -6,14 +6,31 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by Lachlan on 1/03/2016.
+ * A class annotated with this annotation will automatically generate a
+ * Gson {@link gsonpath.GsonArrayStreamer} at compile time.
+ * <p/>
+ * The generated class is useful when wanting to read a JSON array directly
+ * from an input stream without creating a wrapper class which exists only
+ * to allow a Gson {@link com.google.gson.TypeAdapter} to read it properly.
+ * <p/>
+ * It also has more advanced features such as allowing streaming the array elements
+ * one-by-one, or in a segmented fashion.
+ * <p/>
+ * To use this annotation correctly without issues, the annotated class must be an interface
+ * which extends the {@link gsonpath.GsonArrayStreamer} interface. If these preconditions
+ * are not met, a compiler error will be thrown.
+ * <p/>
+ * For more information, see the {@link GsonArrayStreamer} documentation.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 public @interface AutoGsonArrayStreamer {
     /**
-     * By leaving value blank, it is implied that the root
-     * of the json is an array instead of an object.
+     * By leaving value blank, it is implied that the root of the json is an array
+     * instead of an object.
+     * <p/>
+     * For more information as to how this property works, see the {@link gsonpath.AutoGsonAdapter}
+     * documentation.
      */
     String rootField() default "";
 }

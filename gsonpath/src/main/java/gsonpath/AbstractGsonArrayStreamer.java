@@ -8,7 +8,11 @@ import java.io.Reader;
 import java.util.List;
 
 /**
- * Created by Lachlan on 18/04/2016.
+ * A partial implementation of the {@link gsonpath.GsonArrayStreamer} which reduces the
+ * complexity for code generation since most of the methods can call their overloaded variants.
+ * <p/>
+ * All generated {@link GsonArrayStreamer} classes will extend this class, which is why
+ * the {@link gsonpath.AutoGsonArrayStreamer} annotation can only be used on an interface.
  */
 public abstract class AbstractGsonArrayStreamer<T> implements GsonArrayStreamer<T> {
     @Override

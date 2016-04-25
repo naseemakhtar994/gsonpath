@@ -3,9 +3,6 @@ package gsonpath.generator.adapter.auto;
 import com.google.common.base.Joiner;
 import gsonpath.generator.BaseGeneratorTest;
 
-/**
- * Created by Lachlan on 2/03/2016.
- */
 public abstract class BaseAutoTest extends BaseGeneratorTest {
     static final String IMPORT_GSON_PATH_CLASS = "import gsonpath.AutoGsonAdapter;";
     static final String IMPORT_GSON_PATH_ELEMENT = "import com.google.gson.annotations.SerializedName;";

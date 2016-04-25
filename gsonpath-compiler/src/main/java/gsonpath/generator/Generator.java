@@ -8,9 +8,6 @@ import java.io.IOException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
 
-/**
- * Created by Lachlan on 13/03/2016.
- */
 public abstract class Generator {
     public final ProcessingEnvironment processingEnv;
 

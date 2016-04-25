@@ -7,7 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by Lachlan on 1/03/2016.
+ * Specifies that the annotated field will not be added to the auto generated
+ * {@link com.google.gson.TypeAdapter} when using the {@link gsonpath.AutoGsonAdapter}
+ * annotation.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.FIELD)
