@@ -20,7 +20,7 @@ public class PolymorphismTest {
         GsonBuilder builder = new GsonBuilder();
         builder.registerTypeAdapterFactory(GsonPath.createTypeAdapterFactory());
 
-        RuntimeTypeAdapterFactory<Type> type = RuntimeTypeAdapterFactory.of(Type.class, "type");
+        RuntimeTypeAdapterFactory<Type> type = RuntimeTypeAdapterFactory.of(Type.class, "type", false);
         type.registerSubtype(Type1.class, "type1");
         type.registerSubtype(Type2.class, "type2");
         type.registerSubtype(Type3.class, "type3");
@@ -32,7 +32,7 @@ public class PolymorphismTest {
         InputStream resourceAsStream = classLoader.getResourceAsStream("Polymorphism.json");
 
         Type[] array = GsonPath.getArrayStreamer(TypeStreamer.class).getArray(gson, new InputStreamReader(resourceAsStream));
-        Assert.assertEquals(array.length, 4);
+        Assert.assertEquals(array.length, 5);
 
         Type1 value1 = (Type1) array[0];
         Assert.assertEquals(value1.name, "Type1 Example 1");
@@ -49,6 +49,8 @@ public class PolymorphismTest {
         Type3 value4 = (Type3) array[3];
         Assert.assertEquals(value4.name, "Type3 Example 1");
         Assert.assertEquals(value4.stringTest, "123");
+
+        Assert.assertNull(array[4]);
     }
 
 }

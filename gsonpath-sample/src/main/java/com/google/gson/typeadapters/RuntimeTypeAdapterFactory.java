@@ -124,10 +124,12 @@ import com.google.gson.stream.JsonWriter;
 public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
     private final Class<?> baseType;
     private final String typeFieldName;
+    private final boolean failOnUnknownSubType;
     private final Map<String, Class<?>> labelToSubtype = new LinkedHashMap<String, Class<?>>();
     private final Map<Class<?>, String> subtypeToLabel = new LinkedHashMap<Class<?>, String>();
 
-    private RuntimeTypeAdapterFactory(Class<?> baseType, String typeFieldName) {
+    private RuntimeTypeAdapterFactory(Class<?> baseType, String typeFieldName, boolean failOnUnknownSubType) {
+        this.failOnUnknownSubType = failOnUnknownSubType;
         if (typeFieldName == null || baseType == null) {
             throw new NullPointerException();
         }
@@ -139,8 +141,16 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
      * Creates a new runtime type adapter using for {@code baseType} using {@code
      * typeFieldName} as the type field name. Type field names are case sensitive.
      */
+    public static <T> RuntimeTypeAdapterFactory<T> of(Class<T> baseType, String typeFieldName, boolean failOnUnknownSubType) {
+        return new RuntimeTypeAdapterFactory<T>(baseType, typeFieldName, failOnUnknownSubType);
+    }
+
+    /**
+     * Creates a new runtime type adapter using for {@code baseType} using {@code
+     * typeFieldName} as the type field name. Type field names are case sensitive.
+     */
     public static <T> RuntimeTypeAdapterFactory<T> of(Class<T> baseType, String typeFieldName) {
-        return new RuntimeTypeAdapterFactory<T>(baseType, typeFieldName);
+        return new RuntimeTypeAdapterFactory<T>(baseType, typeFieldName, true);
     }
 
     /**
@@ -148,7 +158,7 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
      * the type field name.
      */
     public static <T> RuntimeTypeAdapterFactory<T> of(Class<T> baseType) {
-        return new RuntimeTypeAdapterFactory<T>(baseType, "type");
+        return new RuntimeTypeAdapterFactory<T>(baseType, "type", true);
     }
 
     /**
@@ -211,8 +221,11 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
                 @SuppressWarnings("unchecked")
                 TypeAdapter<R> delegate = (TypeAdapter<R>) labelToDelegate.get(label);
                 if (delegate == null) {
-                    throw new JsonParseException("cannot deserialize " + baseType + " subtype named "
-                            + label + "; did you forget to register a subtype?");
+                    if (failOnUnknownSubType) {
+                        throw new JsonParseException("cannot deserialize " + baseType + " subtype named "
+                                + label + "; did you forget to register a subtype?");
+                    }
+                    return null;
                 }
                 return delegate.fromJsonTree(jsonElement);
             }
@@ -226,8 +239,11 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
                 @SuppressWarnings("unchecked")
                 TypeAdapter<R> delegate = (TypeAdapter<R>) subtypeToDelegate.get(srcType);
                 if (delegate == null) {
-                    throw new JsonParseException("cannot serialize " + srcType.getName()
-                            + "; did you forget to register a subtype?");
+                    if (failOnUnknownSubType) {
+                        throw new JsonParseException("cannot serialize " + srcType.getName()
+                                + "; did you forget to register a subtype?");
+                    }
+                    return;
                 }
                 JsonObject jsonObject = delegate.toJsonTree(value).getAsJsonObject();
                 if (jsonObject.has(typeFieldName)) {
