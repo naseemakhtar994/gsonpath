@@ -56,6 +56,11 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
 
     @Override
     public PersonModel read(JsonReader in) throws IOException {
+        // Ensure the object is not null.
+        if (!isValidValue(in)) {
+            return null;
+        }
+        
         PersonModel result = new PersonModel();
 		int jsonFieldCounter0 = 0;
         in.beginObject();
@@ -162,6 +167,6 @@ For now, you can obtain it via [Jitpack](https://jitpack.io/docs/)
 
 Gradle:
 ```gradle
-compile 'com.github.lachlanm.gsonpath:gsonpath:1.0.7'
-apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.0.7'
+compile 'com.github.lachlanm.gsonpath:gsonpath:1.1.1'
+apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.1.1'
 ```
