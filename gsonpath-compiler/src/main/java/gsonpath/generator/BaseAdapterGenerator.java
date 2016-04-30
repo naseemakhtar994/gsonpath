@@ -55,11 +55,11 @@ public abstract class BaseAdapterGenerator extends Generator {
     }
 
     public interface ObjectParserCallback {
-        void onNodeEmpty();
-    }
+        void onInitialObjectNull();
 
-    protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping) throws ProcessingException {
-        createObjectParser(fieldDepth, codeBlock, jsonMapping, null);
+        void onInitialise();
+
+        void onNodeEmpty();
     }
 
     protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, ObjectParserCallback callback) throws ProcessingException {
@@ -68,15 +68,29 @@ public abstract class BaseAdapterGenerator extends Generator {
 
         //
         // Ensure a Json object exists begin attempting to read it.
-        // Since we are within a switch statement, we need to break out.
         //
-        if (fieldDepth > 0) {
-            codeBlock.add("\n");
-            codeBlock.add("// Ensure the object is not null.\n");
-            codeBlock.beginControlFlow("if (!isValidValue(in))");
+        codeBlock.add("\n");
+        codeBlock.add("// Ensure the object is not null.\n");
+        codeBlock.beginControlFlow("if (!isValidValue(in))");
+
+        if (fieldDepth == 0) {
+            // Allow the calling method to inject different logic. Typically this would be to return.
+            callback.onInitialObjectNull();
+
+        } else {
             codeBlock.addStatement("break");
-            codeBlock.endControlFlow(); // if
+        }
+
+        codeBlock.endControlFlow(); // if
+
+        // This is the first block of code to fire after the object is valid.
+        if (fieldDepth == 0) {
+            callback.onInitialise();
             codeBlock.add("\n");
+        }
+
+        if (jsonMapping.size() == 0) {
+            return;
         }
 
         codeBlock.addStatement("int $L = 0", counterVariableName);
@@ -172,10 +186,8 @@ public abstract class BaseAdapterGenerator extends Generator {
             } else {
                 Map<String, Object> nextLevelMap = (Map<String, Object>) value;
                 if (nextLevelMap.size() == 0) {
-                    if (callback != null) {
-                        callback.onNodeEmpty();
-                        addBreak = false;
-                    }
+                    callback.onNodeEmpty();
+                    addBreak = false;
                 } else {
                     createObjectParser(fieldDepth + 1, codeBlock, nextLevelMap, callback);
                 }

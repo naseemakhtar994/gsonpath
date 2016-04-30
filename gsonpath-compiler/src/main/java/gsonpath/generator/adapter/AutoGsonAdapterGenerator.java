@@ -29,7 +29,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
     public HandleResult handle(TypeElement element) throws ProcessingException {
         String elementPackagePath = ProcessorUtil.getElementPackage(element);
-        ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(element);
+        final ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(element);
         ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get(GSON_PACKAGE, "TypeAdapter"), elementClassName);
 
         MethodSpec constructor = MethodSpec.constructorBuilder()
@@ -56,8 +56,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 .addParameter(JsonReader.class, "in")
                 .addException(IOException.class);
 
-        CodeBlock.Builder codeBlock = CodeBlock.builder();
-        codeBlock.addStatement("$T result = new $T()", elementClassName, elementClassName);
+        final CodeBlock.Builder codeBlock = CodeBlock.builder();
 
         AutoGsonAdapter autoGsonAnnotation = element.getAnnotation(AutoGsonAdapter.class);
         boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
@@ -158,14 +157,25 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         }
 
-        if (rootElements.size() > 0) {
-            mCounterVariableCount = 0;
-            mSafeVariableCount = 0;
+        mCounterVariableCount = 0;
+        mSafeVariableCount = 0;
 
-            createObjectParser(0, codeBlock, rootElements);
-        }
+        createObjectParser(0, codeBlock, rootElements, new ObjectParserCallback() {
+            @Override
+            public void onInitialObjectNull() {
+                codeBlock.addStatement("return null");
+            }
 
-        // Final block of code.
+            @Override
+            public void onInitialise() {
+                codeBlock.addStatement("$T result = new $T()", elementClassName, elementClassName);
+            }
+
+            @Override
+            public void onNodeEmpty() {
+            }
+        });
+
         codeBlock.addStatement("return result");
         readMethod.addCode(codeBlock.build());
 
