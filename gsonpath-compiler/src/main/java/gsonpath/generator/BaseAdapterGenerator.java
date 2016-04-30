@@ -23,6 +23,15 @@ public abstract class BaseAdapterGenerator extends Generator {
             "java.lang.Boolean", "java.lang.Integer", "java.lang.Long", "java.lang.Double"
     ));
 
+    static final Map<String, String> PRIMITIVE_TO_WRAPPER_MAP = new HashMap<>();
+
+    static {
+        PRIMITIVE_TO_WRAPPER_MAP.put("boolean", "java.lang.Boolean");
+        PRIMITIVE_TO_WRAPPER_MAP.put("int", "java.lang.Integer");
+        PRIMITIVE_TO_WRAPPER_MAP.put("long", "java.lang.Long");
+        PRIMITIVE_TO_WRAPPER_MAP.put("double", "java.lang.Double");
+    }
+
     // Used to avoid naming conflicts.
     protected int mCounterVariableCount;
     protected int mSafeVariableCount;
@@ -127,61 +136,62 @@ public abstract class BaseAdapterGenerator extends Generator {
                 validateFieldAnnotations(field);
 
                 String gsonMethodType = ProcessorUtil.getElementType(field);
+
+                //
+                // Handle the primitive the same way as their wrapper class.
+                // This ensures null safety is handled.
+                //
                 if (HANDLED_PRIMITIVES.contains(gsonMethodType)) {
+                    gsonMethodType = PRIMITIVE_TO_WRAPPER_MAP.get(gsonMethodType);
+                }
 
-                    // Handle primitives.
-                    gsonMethodType = Character.toUpperCase(gsonMethodType.charAt(0)) + gsonMethodType.substring(1);
-                    codeBlock.addStatement("result.$L = in.next$L()", field.getSimpleName().toString(), gsonMethodType);
+                // Add a new line to improve readability for the multi-lined mapping.
+                codeBlock.add("\n");
 
-                } else {
-                    // Add a new line to improve readability for the multi-lined mapping.
-                    codeBlock.add("\n");
+                boolean isStringType = gsonMethodType.equals(STRING_CLASS_PATH);
+                boolean callToString = false;
 
-                    boolean isStringType = gsonMethodType.equals(STRING_CLASS_PATH);
-                    boolean callToString = false;
+                if (isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonMethodType)) {
 
-                    if (isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonMethodType)) {
+                    gsonMethodType = gsonMethodType.replace("java.lang.", "");
 
-                        gsonMethodType = gsonMethodType.replace("java.lang.", "");
+                    // Special handling for strings.
+                    boolean handled = false;
+                    if (isStringType) {
+                        FlattenJson annotation = field.getAnnotation(FlattenJson.class);
+                        if (annotation != null) {
+                            handled = true;
+                            codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
 
-                        // Special handling for strings.
-                        boolean handled = false;
-                        if (isStringType) {
-                            FlattenJson annotation = field.getAnnotation(FlattenJson.class);
-                            if (annotation != null) {
-                                handled = true;
-                                codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
-
-                                callToString = true;
-                            }
+                            callToString = true;
                         }
-
-                        if (!handled) {
-                            codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
-                        }
-                    } else {
-                        String adapterName;
-
-                        // TODO: Casting field to 'TypeElement' throws a cast exception, so we need to detect generics in a hacky way at the moment.
-                        boolean isGenericField = gsonMethodType.contains("<");
-                        if (isGenericField) {
-                            // This is a generic type
-                            adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", gsonMethodType);
-
-                        } else {
-                            adapterName = gsonMethodType + ".class";
-                        }
-
-                        // Handle every other possible class by falling back onto the gson adapter.
-                        codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)", gsonMethodType, mSafeVariableCount, adapterName);
                     }
 
-                    codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
-                    codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
-                    codeBlock.endControlFlow(); // if
+                    if (!handled) {
+                        codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
+                    }
+                } else {
+                    String adapterName;
 
-                    mSafeVariableCount++;
+                    // TODO: Casting field to 'TypeElement' throws a cast exception, so we need to detect generics in a hacky way at the moment.
+                    boolean isGenericField = gsonMethodType.contains("<");
+                    if (isGenericField) {
+                        // This is a generic type
+                        adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", gsonMethodType);
+
+                    } else {
+                        adapterName = gsonMethodType + ".class";
+                    }
+
+                    // Handle every other possible class by falling back onto the gson adapter.
+                    codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)", gsonMethodType, mSafeVariableCount, adapterName);
                 }
+
+                codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
+                codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
+                codeBlock.endControlFlow(); // if
+
+                mSafeVariableCount++;
 
             } else {
                 Map<String, Object> nextLevelMap = (Map<String, Object>) value;
