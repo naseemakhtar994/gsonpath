@@ -70,6 +70,16 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         if (rootElements.size() > 0) {
             addToSimpleCodeBlock(getArrayBlock, rootElements, new ObjectParserCallback() {
                 @Override
+                public void onInitialObjectNull() {
+                    getArrayBlock.addStatement("return null");
+                }
+
+                @Override
+                public void onInitialise() {
+
+                }
+
+                @Override
                 public void onNodeEmpty() {
                     addArrayCodeBlock(getArrayBlock, elementClassName);
                 }
@@ -89,6 +99,16 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         if (rootElements.size() > 0) {
             addToSimpleCodeBlock(getListBlock, rootElements, new ObjectParserCallback() {
                 @Override
+                public void onInitialObjectNull() {
+                    getListBlock.addStatement("return null");
+                }
+
+                @Override
+                public void onInitialise() {
+
+                }
+
+                @Override
                 public void onNodeEmpty() {
                     addListCodeBlock(getListBlock, elementClassName);
                 }
@@ -106,13 +126,23 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         streamMultipleJsonReader.addParameter(ParameterizedTypeName.get(ClassName.get(GsonArrayStreamer.StreamCallback.class), ArrayTypeName.of(elementClassName)), "callback");
 
         final CodeBlock.Builder streamCodeBlock = CodeBlock.builder();
-        streamCodeBlock.addStatement("$T[] results = new $T[streamSize]", elementClassName, elementClassName);
-        streamCodeBlock.addStatement("StreamCallback.StreamHandler callbackResponse = new StreamCallback.StreamHandler()");
-        streamCodeBlock.addStatement("int resultIndex = -1");
+        streamCodeBlock.addStatement("$T[] results", elementClassName);
+        streamCodeBlock.addStatement("StreamCallback.StreamHandler callbackResponse");
+        streamCodeBlock.addStatement("int resultIndex");
         streamCodeBlock.add("\n");
 
         if (rootElements.size() > 0) {
             addToSimpleCodeBlock(streamCodeBlock, rootElements, new ObjectParserCallback() {
+                @Override
+                public void onInitialObjectNull() {
+                    streamCodeBlock.addStatement("return");
+                }
+
+                @Override
+                public void onInitialise() {
+                    addStreamInitializerToCodeBlock(streamCodeBlock, elementClassName);
+                }
+
                 @Override
                 public void onNodeEmpty() {
                     addStreamCodeBlock(streamCodeBlock, elementClassName);
@@ -121,6 +151,14 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         } else {
             streamCodeBlock.beginControlFlow("try");
 
+            // Ensure that the array actually exists before attempting to read it.
+            streamCodeBlock.add("// Ensure the array is not null.\n");
+            streamCodeBlock.beginControlFlow("if (!isValidValue(in))");
+            streamCodeBlock.addStatement("return");
+            streamCodeBlock.endControlFlow();
+            streamCodeBlock.add("\n");
+
+            addStreamInitializerToCodeBlock(streamCodeBlock, elementClassName);
             addStreamCodeBlock(streamCodeBlock, elementClassName);
 
             streamCodeBlock.nextControlFlow("catch ($T e)", ClassName.get(IOException.class));
@@ -188,6 +226,12 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         builder.nextControlFlow("catch ($T e)", ClassName.get(IOException.class));
         builder.addStatement("throw new $T(e)", ClassName.get(JsonSyntaxException.class));
         builder.endControlFlow();
+    }
+
+    private void addStreamInitializerToCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
+        builder.addStatement("results = new $T[streamSize]", elementClassName);
+        builder.addStatement("callbackResponse = new StreamCallback.StreamHandler()");
+        builder.addStatement("resultIndex = -1");
     }
 
     private MethodSpec.Builder createBasicBuilder(String name, TypeName returnTypeName) {

@@ -34,7 +34,13 @@ public abstract class BaseAutoTest extends BaseGeneratorTest {
                 "",
                 "    @Override",
                 "    public " + pojoClassName + " read(JsonReader in) throws IOException {",
-                "        " + pojoClassName + " result = new " + pojoClassName + "();"
+                "        // Ensure the object is not null.;",
+                "        if (!isValidValue(in)) {",
+                "            return null;",
+                "        }",
+                "",
+                "        " + pojoClassName + " result = new " + pojoClassName + "();",
+                ""
         );
     }
 
