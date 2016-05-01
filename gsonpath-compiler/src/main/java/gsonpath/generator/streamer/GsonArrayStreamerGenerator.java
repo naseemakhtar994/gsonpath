@@ -56,6 +56,8 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
         AutoGsonArrayStreamer autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayStreamer.class);
         String rootField = autoGsonArrayAnnotation.rootField();
+        char flattenDelimiter = autoGsonArrayAnnotation.flattenDelimiter();
+
         boolean isRootFieldSpecified = (rootField != null && rootField.length() > 0);
 
         // This flag is only valid if the rootField value is populated, since it only affects the behaviour of rootField.
@@ -63,7 +65,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
         Map<String, Object> rootElements = new LinkedHashMap<>();
         if (isRootFieldSpecified) {
-            getElementsFromRoot(rootElements, rootField);
+            getElementsFromRoot(rootElements, rootField, flattenDelimiter);
         }
 
         // getArray

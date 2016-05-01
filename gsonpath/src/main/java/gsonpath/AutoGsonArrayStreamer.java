@@ -35,6 +35,15 @@ public @interface AutoGsonArrayStreamer {
     String rootField() default "";
 
     /**
+     * The delimiter used to flatten Json nested structures into a single POJO.
+     * <p/>
+     * By default this is set to using the '.' character. If required you can override
+     * this to using a different character, and all the fields within this class will
+     * use this delimiter instead.
+     */
+    char flattenDelimiter() default '.';
+
+    /**
      * Typically Gson validates whether a stream has been read in its entirety, and throws
      * an exception if it has not.
      * <p/>

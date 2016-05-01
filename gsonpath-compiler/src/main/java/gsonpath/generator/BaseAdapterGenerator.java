@@ -10,6 +10,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public abstract class BaseAdapterGenerator extends Generator {
     protected static final String GSON_PACKAGE = "com.google.gson";
@@ -40,9 +41,11 @@ public abstract class BaseAdapterGenerator extends Generator {
         super(processingEnv);
     }
 
-    protected Map<String, Object> getElementsFromRoot(Map<String, Object> rootElements, String rootField) {
+    protected Map<String, Object> getElementsFromRoot(Map<String, Object> rootElements, String rootField, char delimiter) {
         if (rootField.length() > 0) {
-            String[] split = rootField.split("\\.");
+            // Ensure that the delimiter is correctly escaped before attempting to split the string.
+            String regexSafeDelimiter = Pattern.quote(String.valueOf(delimiter));
+            String[] split = rootField.split(regexSafeDelimiter);
 
             if (split.length > 0) {
                 for (String field : split) {

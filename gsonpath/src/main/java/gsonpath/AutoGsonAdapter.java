@@ -92,6 +92,15 @@ public @interface AutoGsonAdapter {
     String rootField() default "";
 
     /**
+     * The delimiter used to flatten Json nested structures into a single POJO.
+     * <p/>
+     * By default this is set to using the '.' character. If required you can override
+     * this to using a different character, and all the fields within this class will
+     * use this delimiter instead.
+     */
+    char flattenDelimiter() default '.';
+
+    /**
      * Exposes the Gson field naming policy at compile time rather than runtime.
      * <p/>
      * Note: This will affect every version of this class regardless of how the
