@@ -33,4 +33,13 @@ public @interface AutoGsonArrayStreamer {
      * documentation.
      */
     String rootField() default "";
+
+    /**
+     * The delimiter used to flatten Json nested structures into a single POJO.
+     * <p/>
+     * By default this is set to using the '.' character. If required you can override
+     * this to using a different character, and all the fields within this class will
+     * use this delimiter instead.
+     */
+    char flattenDelimiter() default '.';
 }

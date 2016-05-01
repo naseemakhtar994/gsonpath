@@ -56,10 +56,11 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
         AutoGsonArrayStreamer autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayStreamer.class);
         String rootField = autoGsonArrayAnnotation.rootField();
+        char flattenDelimiter = autoGsonArrayAnnotation.flattenDelimiter();
 
         Map<String, Object> rootElements = new LinkedHashMap<>();
         if (rootField.length() > 0) {
-            getElementsFromRoot(rootElements, rootField);
+            getElementsFromRoot(rootElements, rootField, flattenDelimiter);
         }
 
         // getArray

@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
@@ -60,6 +61,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         AutoGsonAdapter autoGsonAnnotation = element.getAnnotation(AutoGsonAdapter.class);
         boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
+        char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
         FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
 
         List<Element> fieldElements = new ArrayList<>();
@@ -91,7 +93,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         // The root element annotation prevents repetition in the SerializedName annotation.
         String rootField = autoGsonAnnotation.rootField();
         if (rootField.length() > 0) {
-            topLevelFieldMap = getElementsFromRoot(topLevelFieldMap, rootField);
+            topLevelFieldMap = getElementsFromRoot(topLevelFieldMap, rootField, flattenDelimiter);
 
         } else {
             topLevelFieldMap = rootElements;
@@ -117,16 +119,18 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 jsonObjectName = applyFieldNamingPolicy(fieldNamingPolicy, fieldName);
             }
 
-            if (jsonObjectName.contains(".")) {
+            if (jsonObjectName.contains(String.valueOf(flattenDelimiter))) {
                 //
-                // When the last character is a dot, we should append the variable name to
+                // When the last character is a delimiter, we should append the variable name to
                 // the end of the field name, as this may reduce annotation repetition.
                 //
-                if (jsonObjectName.charAt(jsonObjectName.length() - 1) == '.') {
+                if (jsonObjectName.charAt(jsonObjectName.length() - 1) == flattenDelimiter) {
                     jsonObjectName += fieldName;
                 }
 
-                String[] split = jsonObjectName.split("\\.");
+                // Ensure that the delimiter is correctly escaped before attempting to split the string.
+                String regexSafeDelimiter = Pattern.quote(String.valueOf(flattenDelimiter));
+                String[] split = jsonObjectName.split(regexSafeDelimiter);
                 int lastIndex = split.length - 1;
 
                 Map<String, Object> currentMap = topLevelFieldMap;
