@@ -56,18 +56,29 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
         AutoGsonArrayStreamer autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayStreamer.class);
         String rootField = autoGsonArrayAnnotation.rootField();
+        boolean isRootFieldSpecified = (rootField != null && rootField.length() > 0);
+
+        // This flag is only valid if the rootField value is populated, since it only affects the behaviour of rootField.
+        final boolean consumeReaderFully = autoGsonArrayAnnotation.consumeReaderFully() && isRootFieldSpecified;
 
         Map<String, Object> rootElements = new LinkedHashMap<>();
-        if (rootField.length() > 0) {
+        if (isRootFieldSpecified) {
             getElementsFromRoot(rootElements, rootField);
         }
 
         // getArray
-        MethodSpec.Builder getArrayJsonReader = createBasicBuilder("getArray", ArrayTypeName.of(elementClassName));
+        ArrayTypeName elementArrayType = ArrayTypeName.of(elementClassName);
+        MethodSpec.Builder getArrayJsonReader = createBasicBuilder("getArray", elementArrayType);
 
         final CodeBlock.Builder getArrayBlock = CodeBlock.builder();
 
+        // If we are reading the whole object, we need to a variable declared outside the try/catch
+        if (consumeReaderFully) {
+            getArrayBlock.addStatement("$T result = null", elementArrayType);
+        }
+
         if (rootElements.size() > 0) {
+            // The code must navigate to the correct root field.
             addToSimpleCodeBlock(getArrayBlock, rootElements, new ObjectParserCallback() {
                 @Override
                 public void onInitialObjectNull() {
@@ -81,22 +92,50 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
                 @Override
                 public void onNodeEmpty() {
-                    addArrayCodeBlock(getArrayBlock, elementClassName);
+                    if (consumeReaderFully) {
+                        // Since we read the json entirely, we cannot return here.
+                        getArrayBlock.addStatement("result = gson.fromJson(in, $T[].class)", elementClassName);
+                        getArrayBlock.addStatement("break");
+
+                    } else {
+                        getArrayBlock.addStatement("return gson.fromJson(in, $T[].class)", elementClassName);
+                    }
                 }
             });
-            getArrayBlock.addStatement("return null");
+
+            // Since we may not read the entire object, we won't return a result at the end of the code block.
+            if (consumeReaderFully) {
+                getArrayBlock.addStatement("return result");
+            } else {
+                getArrayBlock.addStatement("return null");
+            }
+
         } else {
-            addArrayCodeBlock(getArrayBlock, elementClassName);
+            // There is no custom root field specified, therefore this is the root field.
+            if (consumeReaderFully) {
+                // Since we read the json entirely, we cannot return here.
+                getArrayBlock.addStatement("result = gson.fromJson(in, $T[].class)", elementClassName);
+
+            } else {
+                getArrayBlock.addStatement("return gson.fromJson(in, $T[].class)", elementClassName);
+            }
         }
         getArrayJsonReader.addCode(getArrayBlock.build());
         typeBuilder.addMethod(getArrayJsonReader.build());
 
         // getList
-        MethodSpec.Builder getListJsonReader = createBasicBuilder("getList", ParameterizedTypeName.get(ClassName.get(List.class), elementClassName));
+        ParameterizedTypeName elementListType = ParameterizedTypeName.get(ClassName.get(List.class), elementClassName);
+        MethodSpec.Builder getListJsonReader = createBasicBuilder("getList", elementListType);
 
         final CodeBlock.Builder getListBlock = CodeBlock.builder();
 
+        // If we are reading the whole object, we need to a variable declared outside the try/catch
+        if (consumeReaderFully) {
+            getListBlock.addStatement("$T result = null", elementListType);
+        }
+
         if (rootElements.size() > 0) {
+            // The code must navigate to the correct root field.
             addToSimpleCodeBlock(getListBlock, rootElements, new ObjectParserCallback() {
                 @Override
                 public void onInitialObjectNull() {
@@ -110,12 +149,33 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
                 @Override
                 public void onNodeEmpty() {
-                    addListCodeBlock(getListBlock, elementClassName);
+                    if (consumeReaderFully) {
+                        // Sine we read the json entirely, we cannot return here.
+                        getListBlock.addStatement("result = gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+                        getListBlock.addStatement("break");
+
+                    } else {
+                        getListBlock.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+                    }
                 }
             });
-            getListBlock.addStatement("return null");
+
+            // Since we may not read the entire object, we won't return a result at the end of the code block.
+            if (consumeReaderFully) {
+                getListBlock.addStatement("return result");
+            } else {
+                getListBlock.addStatement("return null");
+            }
+
         } else {
-            addListCodeBlock(getListBlock, elementClassName);
+            // There is no custom root field specified, therefore this is the root field.
+            if (consumeReaderFully) {
+                // Sine we read the json entirely, we cannot return here.
+                getListBlock.addStatement("result = gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+
+            } else {
+                getListBlock.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+            }
         }
         getListJsonReader.addCode(getListBlock.build());
         typeBuilder.addMethod(getListJsonReader.build());
@@ -123,7 +183,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         // Stream results, multiple - json reader.
         MethodSpec.Builder streamMultipleJsonReader = createBasicBuilder("streamArraySegmented", null);
         streamMultipleJsonReader.addParameter(TypeName.INT, "streamSize");
-        streamMultipleJsonReader.addParameter(ParameterizedTypeName.get(ClassName.get(GsonArrayStreamer.StreamCallback.class), ArrayTypeName.of(elementClassName)), "callback");
+        streamMultipleJsonReader.addParameter(ParameterizedTypeName.get(ClassName.get(GsonArrayStreamer.StreamCallback.class), elementArrayType), "callback");
 
         final CodeBlock.Builder streamCodeBlock = CodeBlock.builder();
         streamCodeBlock.addStatement("$T[] results", elementClassName);
@@ -132,6 +192,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         streamCodeBlock.add("\n");
 
         if (rootElements.size() > 0) {
+            // The code must navigate to the correct root field.
             addToSimpleCodeBlock(streamCodeBlock, rootElements, new ObjectParserCallback() {
                 @Override
                 public void onInitialObjectNull() {
@@ -149,6 +210,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
                 }
             });
         } else {
+            // There is no custom root field specified, therefore this is the root field.
             streamCodeBlock.beginControlFlow("try");
 
             // Ensure that the array actually exists before attempting to read it.
@@ -185,14 +247,6 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
             return new HandleResult(originalAdapterInterface, ClassName.get(elementPackagePath, adapterClassName));
         }
         throw new ProcessingException();
-    }
-
-    private void addArrayCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
-        builder.addStatement("return gson.fromJson(in, $T[].class)", elementClassName);
-    }
-
-    private void addListCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
-        builder.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
     }
 
     private void addStreamCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
