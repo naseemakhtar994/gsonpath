@@ -42,4 +42,18 @@ public @interface AutoGsonArrayStreamer {
      * use this delimiter instead.
      */
     char flattenDelimiter() default '.';
+
+    /**
+     * Typically Gson validates whether a stream has been read in its entirety, and throws
+     * an exception if it has not.
+     * <p/>
+     * When using the 'rootField' property, we can yield a performance gain by ignoring the rest
+     * of the stream as soon as the specified Json Array has been read.
+     * <p/>
+     * The downsides to this is that the stream is now in an invalid state. By default we want
+     * to ensure that the stream is read correctly to maintain good compatibility with Gson.
+     * However if you use the streamer directly on the input stream, you can deliberately disable
+     * this functionality and reap some level of performance gains.
+     */
+    boolean consumeReaderFully() default true;
 }
