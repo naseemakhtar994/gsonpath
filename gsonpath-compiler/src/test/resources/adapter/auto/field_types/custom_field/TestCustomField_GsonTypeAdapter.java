@@ -1,0 +1,63 @@
+package adapter.auto.field_types.custom_field;
+
+import static gsonpath.GsonUtil.*;
+
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+import java.io.IOException;
+import java.lang.Override;
+
+public final class TestCustomField_GsonTypeAdapter extends TypeAdapter<TestCustomField> {
+    private final Gson mGson;
+
+    public TestCustomField_GsonTypeAdapter(Gson gson) {
+        this.mGson = gson;
+    }
+
+    @Override
+    public TestCustomField read(JsonReader in) throws IOException {
+
+        // Ensure the object is not null.
+        if (!isValidValue(in)) {
+            return null;
+        }
+        TestCustomField result = new TestCustomField();
+
+        int jsonFieldCounter0 = 0;
+        in.beginObject();
+
+        while (in.hasNext()) {
+            if (jsonFieldCounter0 == 1) {
+                in.skipValue();
+                continue;
+            }
+
+            switch (in.nextName()) {
+                case "value1":
+                    jsonFieldCounter0++;
+
+                    java.util.Currency safeValue0 = mGson.getAdapter(java.util.Currency.class).read(in);
+                    if (safeValue0 != null) {
+                        result.value1 = safeValue0;
+                    }
+                    break;
+
+                default:
+                    in.skipValue();
+                    break;
+            }
+        }
+
+
+        in.endObject();
+        return result;
+    }
+
+    @Override
+    public void write(JsonWriter out, TestCustomField value) throws IOException {
+        // GsonPath does not support writing at this stage.
+    }
+}

@@ -1,79 +1,41 @@
 package gsonpath.generator.adapter.auto;
 
-import com.google.common.base.Joiner;
-import com.google.gson.FieldNamingPolicy;
+import gsonpath.generator.BaseGeneratorTest;
 import org.junit.Test;
 
-public class FieldNamingPolicyTest extends BaseAutoTest {
-
-    private void testPolicy(FieldNamingPolicy policy, String fieldName, String jsonName) {
-        String source = Joiner.on('\n').join(
-                STANDARD_PACKAGE_NAME,
-                IMPORT_GSON_PATH_CLASS,
-                IMPORT_GSON_PATH_ELEMENT,
-                "@AutoGsonAdapter(fieldNamingPolicy = com.google.gson.FieldNamingPolicy." + policy.name() + ")",
-                "public class Test {",
-                "    public int " + fieldName + ";",
-                "}"
-        );
-
-        String typeAdapterSource = Joiner.on('\n').join(
-                STANDARD_RESULT_PACKAGE_AND_IMPORTS,
-                STANDARD_RESULT_HEADER,
-                "int jsonFieldCounter0 = 0;",
-                "in.beginObject();",
-                "",
-                "while (in.hasNext()) {",
-                "    if (jsonFieldCounter0 == 1) {",
-                "        in.skipValue();",
-                "        continue;",
-                "    }",
-                "",
-                "    switch(in.nextName()) {",
-                "        case \"" + jsonName + "\":",
-                "            jsonFieldCounter0++;",
-                "",
-                "            Integer safeValue0 = getIntegerSafely(in);",
-                "            if (safeValue0 != null {",
-                "                result." + fieldName + " = safeValue0;",
-                "            }",
-                "            break;",
-                "",
-                "        default:",
-                "            in.skipValue();",
-                "            break;",
-                "    }",
-                "}",
-                "",
-                "in.endObject();",
-                STANDARD_RESULT_FOOTER
-        );
-
-        assertGeneratedContent(source, typeAdapterSource);
-    }
-
+public class FieldNamingPolicyTest extends BaseGeneratorTest {
     @Test
     public void testIdentity() {
-        testPolicy(FieldNamingPolicy.IDENTITY, "testValue", "testValue");
+        assertGeneratedContent(new TestCriteria("adapter/auto/naming_policy/identity")
+                .addRelativeSource("TestNamePolicyIdentity.java")
+                .addRelativeGenerated("TestNamePolicyIdentity_GsonTypeAdapter.java"));
     }
 
     @Test
     public void testLowerCaseWithDashes() {
-        testPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES, "testValue", "test-value");
+        assertGeneratedContent(new TestCriteria("adapter/auto/naming_policy/lowercase_dashes")
+                .addRelativeSource("TestNamePolicyLowerCaseDashes.java")
+                .addRelativeGenerated("TestNamePolicyLowerCaseDashes_GsonTypeAdapter.java"));
     }
 
     @Test
     public void testLowerCaseWithUnderscores() {
-        testPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES, "testValue", "test_value");
+        assertGeneratedContent(new TestCriteria("adapter/auto/naming_policy/lowercase_underscores")
+                .addRelativeSource("TestNamePolicyLowerCaseUnderscores.java")
+                .addRelativeGenerated("TestNamePolicyLowerCaseUnderscores_GsonTypeAdapter.java"));
     }
 
     @Test
     public void testUpperCamelCase() {
-        testPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE, "testValue", "TestValue");
+        assertGeneratedContent(new TestCriteria("adapter/auto/naming_policy/upper_camel_case")
+                .addRelativeSource("TestNamePolicyUpperCamelCase.java")
+                .addRelativeGenerated("TestNamePolicyUpperCamelCase_GsonTypeAdapter.java"));
     }
 
     @Test
     public void testUpperCamelCaseWithSpaces() {
-        testPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE_WITH_SPACES, "testValue", "Test Value");
+        assertGeneratedContent(new TestCriteria("adapter/auto/naming_policy/upper_camel_case_spaces")
+                .addRelativeSource("TestNamePolicyUpperCamelCaseSpaces.java")
+                .addRelativeGenerated("TestNamePolicyUpperCamelCaseSpaces_GsonTypeAdapter.java"));
     }
 }

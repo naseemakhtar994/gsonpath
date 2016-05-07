@@ -1,0 +1,8 @@
+package adapter.auto.empty.invalid_fields;
+
+import gsonpath.AutoGsonAdapter;
+
+@AutoGsonAdapter(ignoreNonAnnotatedFields = true)
+public class TestInvalidFields {
+    public java.lang.String element1;
+}

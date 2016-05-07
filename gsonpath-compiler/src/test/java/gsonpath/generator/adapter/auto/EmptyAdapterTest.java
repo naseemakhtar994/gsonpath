@@ -1,6 +1,6 @@
 package gsonpath.generator.adapter.auto;
 
-import com.google.common.base.Joiner;
+import gsonpath.generator.BaseGeneratorTest;
 import org.junit.Test;
 
 /**
@@ -9,52 +9,29 @@ import org.junit.Test;
  * This can be due to the class being empty, or the content within the class isn't
  * applicable for a type adapter.
  */
-public class EmptyAdapterTest extends BaseAutoTest {
-
-    void assertEmptyFile(String source) {
-        assertGeneratedContent(source, createEmptyResultSource("Test"));
-    }
+public class EmptyAdapterTest extends BaseGeneratorTest {
 
     /**
      * Tests the output generated when only a {@link gsonpath.AutoGsonAdapter} annotation is used.
      */
     @Test
     public void testAutoGsonAdapterOnly() {
-        assertEmptyFile(Joiner.on('\n').join(
-                STANDARD_PACKAGE_NAME,
-                IMPORT_GSON_PATH_CLASS,
-                "@AutoGsonAdapter",
-                "public class Test {",
-                "}"
-        ));
+        assertGeneratedContent(new TestCriteria("adapter/auto/empty/annotation_only")
+                .addRelativeSource("TestAnnotationOnly.java")
+                .addRelativeGenerated("TestAnnotationOnly_GsonTypeAdapter.java"));
     }
 
     @Test
     public void testRequiresAnnotation() {
-        assertEmptyFile(Joiner.on('\n').join(
-                STANDARD_PACKAGE_NAME,
-                IMPORT_GSON_PATH_CLASS,
-                IMPORT_GSON_PATH_ELEMENT,
-                "@AutoGsonAdapter(ignoreNonAnnotatedFields = true)",
-                "public class Test {",
-                "    public java.lang.Object element1;",
-                "}"
-        ));
+        assertGeneratedContent(new TestCriteria("adapter/auto/empty/ignored_fields")
+                .addRelativeSource("TestIgnoredFields.java")
+                .addRelativeGenerated("TestIgnoredFields_GsonTypeAdapter.java"));
     }
 
     @Test
     public void testIgnoreInvalidFields() {
-        assertEmptyFile(Joiner.on('\n').join(
-                STANDARD_PACKAGE_NAME,
-                IMPORT_GSON_PATH_CLASS,
-                IMPORT_GSON_PATH_ELEMENT,
-                "@AutoGsonAdapter",
-                "public class Test {",
-                "    private static final String TAG = Test.class.getSimpleName();",
-                "    public static final int element1 = 1;",
-                "    public final int element2 = 2;",
-                "    public static int element3 = 3;",
-                "}"
-        ));
+        assertGeneratedContent(new TestCriteria("adapter/auto/empty/invalid_fields")
+                .addRelativeSource("TestInvalidFields.java")
+                .addRelativeGenerated("TestInvalidFields_GsonTypeAdapter.java"));
     }
 }
