@@ -107,4 +107,6 @@ public @interface AutoGsonAdapter {
      * gson object is constructed.
      */
     FieldNamingPolicy fieldNamingPolicy() default FieldNamingPolicy.IDENTITY;
+
+    boolean serializeNulls() default false;
 }

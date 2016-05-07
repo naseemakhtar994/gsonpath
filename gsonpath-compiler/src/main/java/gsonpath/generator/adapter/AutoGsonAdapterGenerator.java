@@ -46,19 +46,6 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 .addField(Gson.class, "mGson", Modifier.PRIVATE, Modifier.FINAL)
                 .addMethod(constructor);
 
-        //
-        //@Override
-        //public ImageSizes read(JsonReader in) throws IOException {
-        //
-        MethodSpec.Builder readMethod = MethodSpec.methodBuilder("read")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(elementClassName)
-                .addParameter(JsonReader.class, "in")
-                .addException(IOException.class);
-
-        final CodeBlock.Builder codeBlock = CodeBlock.builder();
-
         AutoGsonAdapter autoGsonAnnotation = element.getAnnotation(AutoGsonAdapter.class);
         boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
         char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
@@ -161,6 +148,29 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         }
 
+        typeBuilder.addMethod(createReadMethod(elementClassName, rootElements));
+        typeBuilder.addMethod(createWriteMethod(elementClassName));
+
+        if (writeFile(elementPackagePath, typeBuilder)) {
+            return new HandleResult(elementClassName, ClassName.get(elementPackagePath, adapterClassName));
+        }
+
+        throw new ProcessingException();
+    }
+
+    /**
+     * public ImageSizes read(JsonReader in) throws IOException {
+     */
+    private MethodSpec createReadMethod(final ClassName elementClassName, Map<String, Object> rootElements) throws ProcessingException {
+        MethodSpec.Builder readMethod = MethodSpec.methodBuilder("read")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(elementClassName)
+                .addParameter(JsonReader.class, "in")
+                .addException(IOException.class);
+
+        final CodeBlock.Builder codeBlock = CodeBlock.builder();
+
         mCounterVariableCount = 0;
         mSafeVariableCount = 0;
 
@@ -183,12 +193,13 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         codeBlock.addStatement("return result");
         readMethod.addCode(codeBlock.build());
 
-        typeBuilder.addMethod(readMethod.build());
+        return readMethod.build();
+    }
 
-        //
-        //@Override
-        //public void write(JsonWriter out, ImageSizes value) throws IOException {
-        //
+    /**
+     * public void write(JsonWriter out, ImageSizes value) throws IOException {
+     */
+    private MethodSpec createWriteMethod(ClassName elementClassName) throws ProcessingException {
         MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
@@ -197,13 +208,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 .addException(IOException.class)
                 .addCode("// GsonPath does not support writing at this stage.\n");
 
-        typeBuilder.addMethod(writeMethod.build());
-
-        if (writeFile(elementPackagePath, typeBuilder)) {
-            return new HandleResult(elementClassName, ClassName.get(elementPackagePath, adapterClassName));
-        }
-
-        throw new ProcessingException();
+        return writeMethod.build();
     }
 
     @Override
