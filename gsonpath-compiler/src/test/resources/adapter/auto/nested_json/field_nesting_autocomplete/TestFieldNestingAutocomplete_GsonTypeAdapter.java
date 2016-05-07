@@ -85,6 +85,24 @@ public final class TestFieldNestingAutocomplete_GsonTypeAdapter extends TypeAdap
 
     @Override
     public void write(JsonWriter out, TestFieldNestingAutocomplete value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+
+        // Begin Json1
+        out.name("Json1");
+        out.beginObject();
+        int obj0 = value.value1;
+        out.name("value1");
+        out.value(obj0);
+
+        // End Json1
+        out.endObject();
+        // End
+        out.endObject();
     }
 }

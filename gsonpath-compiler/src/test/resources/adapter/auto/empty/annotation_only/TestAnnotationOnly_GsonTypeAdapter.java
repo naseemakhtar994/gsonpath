@@ -31,6 +31,14 @@ public final class TestAnnotationOnly_GsonTypeAdapter extends TypeAdapter<TestAn
 
     @Override
     public void write(JsonWriter out, TestAnnotationOnly value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        // End
+        out.endObject();
     }
 }

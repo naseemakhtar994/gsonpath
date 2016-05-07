@@ -58,6 +58,18 @@ public final class TestNamePolicyLowerCaseDashes_GsonTypeAdapter extends TypeAda
 
     @Override
     public void write(JsonWriter out, TestNamePolicyLowerCaseDashes value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.testValue;
+        out.name("test-value");
+        out.value(obj0);
+
+        // End
+        out.endObject();
     }
 }

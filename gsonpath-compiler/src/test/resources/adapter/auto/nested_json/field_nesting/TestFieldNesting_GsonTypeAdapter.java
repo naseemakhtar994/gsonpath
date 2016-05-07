@@ -139,6 +139,42 @@ public final class TestFieldNesting_GsonTypeAdapter extends TypeAdapter<TestFiel
 
     @Override
     public void write(JsonWriter out, TestFieldNesting value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.value1;
+        out.name("Json1");
+        out.value(obj0);
+
+
+        // Begin Json2
+        out.name("Json2");
+        out.beginObject();
+        int obj1 = value.value2;
+        out.name("Nest1");
+        out.value(obj1);
+
+
+        // Begin Json2.Nest2
+        out.name("Nest2");
+        out.beginObject();
+        int obj2 = value.value3;
+        out.name("EndPoint1");
+        out.value(obj2);
+
+        int obj3 = value.value4;
+        out.name("EndPoint2");
+        out.value(obj3);
+
+        // End Json2.Nest2
+        out.endObject();
+        // End Json2
+        out.endObject();
+        // End
+        out.endObject();
     }
 }

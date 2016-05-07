@@ -58,6 +58,18 @@ public final class TestNamePolicyUpperCamelCase_GsonTypeAdapter extends TypeAdap
 
     @Override
     public void write(JsonWriter out, TestNamePolicyUpperCamelCase value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.testValue;
+        out.name("TestValue");
+        out.value(obj0);
+
+        // End
+        out.endObject();
     }
 }

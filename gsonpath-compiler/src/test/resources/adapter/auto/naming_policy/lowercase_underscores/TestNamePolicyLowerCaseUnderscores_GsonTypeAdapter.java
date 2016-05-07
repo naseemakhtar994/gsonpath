@@ -58,6 +58,18 @@ public final class TestNamePolicyLowerCaseUnderscores_GsonTypeAdapter extends Ty
 
     @Override
     public void write(JsonWriter out, TestNamePolicyLowerCaseUnderscores value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.testValue;
+        out.name("test_value");
+        out.value(obj0);
+
+        // End
+        out.endObject();
     }
 }

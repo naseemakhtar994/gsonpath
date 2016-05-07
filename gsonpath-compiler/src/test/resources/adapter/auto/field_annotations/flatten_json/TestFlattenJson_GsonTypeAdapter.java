@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
 import java.lang.Override;
+import java.lang.String;
 
 public final class TestFlattenJson_GsonTypeAdapter extends TypeAdapter<TestFlattenJson> {
     private final Gson mGson;
@@ -58,6 +59,20 @@ public final class TestFlattenJson_GsonTypeAdapter extends TypeAdapter<TestFlatt
 
     @Override
     public void write(JsonWriter out, TestFlattenJson value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        String obj0 = value.value1;
+        if (obj0 != null) {
+            out.name("value1");
+            out.value(obj0);
+        }
+
+        // End
+        out.endObject();
     }
 }

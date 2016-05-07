@@ -58,6 +58,18 @@ public final class TestNestedClass_Nested_GsonTypeAdapter extends TypeAdapter<Te
 
     @Override
     public void write(JsonWriter out, TestNestedClass.Nested value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.value1;
+        out.name("value1");
+        out.value(obj0);
+
+        // End
+        out.endObject();
     }
 }

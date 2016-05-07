@@ -85,6 +85,30 @@ public final class TestPrimitives_GsonTypeAdapter extends TypeAdapter<TestPrimit
 
     @Override
     public void write(JsonWriter out, TestPrimitives value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        boolean obj0 = value.value1;
+        out.name("value1");
+        out.value(obj0);
+
+        int obj1 = value.value2;
+        out.name("value2");
+        out.value(obj1);
+
+        double obj2 = value.value3;
+        out.name("value3");
+        out.value(obj2);
+
+        long obj3 = value.value4;
+        out.name("value4");
+        out.value(obj3);
+
+        // End
+        out.endObject();
     }
 }

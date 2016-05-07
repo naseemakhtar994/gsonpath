@@ -9,6 +9,8 @@ import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
 import java.lang.Override;
+import java.lang.String;
+import java.util.List;
 
 public final class TestGenerics_GsonTypeAdapter extends TypeAdapter<TestGenerics> {
     private final Gson mGson;
@@ -59,6 +61,20 @@ public final class TestGenerics_GsonTypeAdapter extends TypeAdapter<TestGenerics
 
     @Override
     public void write(JsonWriter out, TestGenerics value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        List<String> obj0 = value.value1;
+        if (obj0 != null) {
+            out.name("value1");
+            mGson.getAdapter(new com.google.gson.reflect.TypeToken<java.util.List<java.lang.String>>(){}).write(out, obj0);
+        }
+
+        // End
+        out.endObject();
     }
 }

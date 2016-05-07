@@ -58,6 +58,18 @@ public final class TestNamePolicyIdentity_GsonTypeAdapter extends TypeAdapter<Te
 
     @Override
     public void write(JsonWriter out, TestNamePolicyIdentity value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.testValue;
+        out.name("testValue");
+        out.value(obj0);
+
+        // End
+        out.endObject();
     }
 }

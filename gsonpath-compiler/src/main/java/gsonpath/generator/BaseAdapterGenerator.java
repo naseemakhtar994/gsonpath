@@ -16,15 +16,15 @@ public abstract class BaseAdapterGenerator extends Generator {
     protected static final String GSON_PACKAGE = "com.google.gson";
     protected static final String STRING_CLASS_PATH = "java.lang.String";
 
-    static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
+    protected static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
             "boolean", "int", "long", "double"
     ));
 
-    static final Set<String> HANDLED_BOXED_PRIMITIVES = new HashSet<>(Arrays.asList(
+    protected static final Set<String> HANDLED_BOXED_PRIMITIVES = new HashSet<>(Arrays.asList(
             "java.lang.Boolean", "java.lang.Integer", "java.lang.Long", "java.lang.Double"
     ));
 
-    static final Map<String, String> PRIMITIVE_TO_WRAPPER_MAP = new HashMap<>();
+    protected static final Map<String, String> PRIMITIVE_TO_WRAPPER_MAP = new HashMap<>();
 
     static {
         PRIMITIVE_TO_WRAPPER_MAP.put("boolean", "java.lang.Boolean");

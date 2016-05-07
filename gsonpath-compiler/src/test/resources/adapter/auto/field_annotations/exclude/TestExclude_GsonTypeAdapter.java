@@ -58,6 +58,18 @@ public final class TestExclude_GsonTypeAdapter extends TypeAdapter<TestExclude> 
 
     @Override
     public void write(JsonWriter out, TestExclude value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        int obj0 = value.element1;
+        out.name("element1");
+        out.value(obj0);
+
+        // End
+        out.endObject();
     }
 }

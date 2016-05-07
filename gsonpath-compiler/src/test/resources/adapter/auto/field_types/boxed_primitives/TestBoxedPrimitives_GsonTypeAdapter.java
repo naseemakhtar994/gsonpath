@@ -8,7 +8,12 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
+import java.lang.Boolean;
+import java.lang.Double;
+import java.lang.Integer;
+import java.lang.Long;
 import java.lang.Override;
+import java.lang.String;
 
 public final class TestBoxedPrimitives_GsonTypeAdapter extends TypeAdapter<TestBoxedPrimitives> {
     private final Gson mGson;
@@ -94,6 +99,44 @@ public final class TestBoxedPrimitives_GsonTypeAdapter extends TypeAdapter<TestB
 
     @Override
     public void write(JsonWriter out, TestBoxedPrimitives value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        String obj0 = value.value1;
+        if (obj0 != null) {
+            out.name("value1");
+            out.value(obj0);
+        }
+
+        Boolean obj1 = value.value2;
+        if (obj1 != null) {
+            out.name("value2");
+            out.value(obj1);
+        }
+
+        Integer obj2 = value.value3;
+        if (obj2 != null) {
+            out.name("value3");
+            out.value(obj2);
+        }
+
+        Double obj3 = value.value4;
+        if (obj3 != null) {
+            out.name("value4");
+            out.value(obj3);
+        }
+
+        Long obj4 = value.value5;
+        if (obj4 != null) {
+            out.name("value5");
+            out.value(obj4);
+        }
+
+        // End
+        out.endObject();
     }
 }
