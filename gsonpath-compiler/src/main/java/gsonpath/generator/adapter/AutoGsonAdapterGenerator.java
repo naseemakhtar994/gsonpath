@@ -50,6 +50,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
         char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
         FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
+        boolean serializeNulls = autoGsonAnnotation.serializeNulls();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -149,7 +150,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         }
 
         typeBuilder.addMethod(createReadMethod(elementClassName, rootElements));
-        typeBuilder.addMethod(createWriteMethod(elementClassName, rootElements));
+        typeBuilder.addMethod(createWriteMethod(elementClassName, rootElements, serializeNulls));
 
         if (writeFile(elementPackagePath, typeBuilder)) {
             return new HandleResult(elementClassName, ClassName.get(elementPackagePath, adapterClassName));
@@ -199,7 +200,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     /**
      * public void write(JsonWriter out, ImageSizes value) throws IOException {
      */
-    private MethodSpec createWriteMethod(ClassName elementClassName, Map<String, Object> rootElements) throws ProcessingException {
+    private MethodSpec createWriteMethod(ClassName elementClassName, Map<String, Object> rootElements, boolean serializeNulls) throws ProcessingException {
         MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
@@ -220,13 +221,13 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         codeBlock.add("\n");
         codeBlock.add("// Begin\n");
 
-        writeObject(0, codeBlock, rootElements, "");
+        writeObject(0, codeBlock, rootElements, "", serializeNulls);
 
         writeMethod.addCode(codeBlock.build());
         return writeMethod.build();
     }
 
-    private void writeObject(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, String currentPath) throws ProcessingException {
+    private void writeObject(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, String currentPath, boolean serializeNulls) throws ProcessingException {
         codeBlock.addStatement("out.beginObject()");
 
         for (String key : jsonMapping.keySet()) {
@@ -250,10 +251,16 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
                 codeBlock.addStatement("$T $L = value.$L", value, objectName, field.getSimpleName().toString());
 
-                if (!isPrimitive) {
+                // If we aren't serializing nulls, we need to prevent the 'out.name' code being executed.
+                if (!isPrimitive && !serializeNulls) {
                     codeBlock.beginControlFlow("if ($L != null)", objectName);
                 }
                 codeBlock.addStatement("out.name(\"$L\")", key);
+
+                // Since we are serializing nulls, we defer the if-statement until after the name is written.
+                if (!isPrimitive && serializeNulls) {
+                    codeBlock.beginControlFlow("if ($L != null)", objectName);
+                }
 
                 boolean isStringType = gsonFieldType.equals(STRING_CLASS_PATH);
                 if (isPrimitive || isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonFieldType)) {
@@ -276,7 +283,13 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                     codeBlock.addStatement("mGson.getAdapter($L).write(out, $L)", adapterName, objectName);
 
                 }
+
+                // If we are serializing nulls, we need to ensure we output it here.
                 if (!isPrimitive) {
+                    if (serializeNulls) {
+                        codeBlock.nextControlFlow("else");
+                        codeBlock.addStatement("out.nullValue()");
+                    }
                     codeBlock.endControlFlow();
                 }
                 codeBlock.add("\n");
@@ -294,7 +307,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                     // Add a comment mentioning what nested object we are current pointing at.
                     codeBlock.add("\n// Begin $L\n", newPath);
                     codeBlock.addStatement("out.name(\"$L\")", key);
-                    writeObject(fieldDepth + 1, codeBlock, nextLevelMap, newPath);
+                    writeObject(fieldDepth + 1, codeBlock, nextLevelMap, newPath, serializeNulls);
                 }
             }
         }
