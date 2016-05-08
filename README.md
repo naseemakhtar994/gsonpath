@@ -156,7 +156,39 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
 
     @Override
     public void write(JsonWriter out, PersonModel value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+    
+        // Begin
+        out.beginObject();
+    
+        // Begin person
+        out.name("person");
+        out.beginObject();
+    
+        // Begin person.names
+        out.name("names");
+        out.beginObject();
+        String obj0 = value.first;
+        if (obj0 != null) {
+            out.name("first");
+            out.value(obj0);
+        }
+    
+        String obj1 = value.last;
+        if (obj1 != null) {
+            out.name("last");
+            out.value(obj1);
+        }
+    
+        // End person.names
+        out.endObject();
+        // End person
+        out.endObject();
+        // End 
+        out.endObject();
     }
 }
 ```

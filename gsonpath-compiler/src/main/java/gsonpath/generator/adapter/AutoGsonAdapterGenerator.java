@@ -50,6 +50,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
         char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
         FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
+        boolean serializeNulls = autoGsonAnnotation.serializeNulls();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -149,7 +150,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         }
 
         typeBuilder.addMethod(createReadMethod(elementClassName, rootElements));
-        typeBuilder.addMethod(createWriteMethod(elementClassName));
+        typeBuilder.addMethod(createWriteMethod(elementClassName, rootElements, serializeNulls));
 
         if (writeFile(elementPackagePath, typeBuilder)) {
             return new HandleResult(elementClassName, ClassName.get(elementPackagePath, adapterClassName));
@@ -199,16 +200,120 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     /**
      * public void write(JsonWriter out, ImageSizes value) throws IOException {
      */
-    private MethodSpec createWriteMethod(ClassName elementClassName) throws ProcessingException {
+    private MethodSpec createWriteMethod(ClassName elementClassName, Map<String, Object> rootElements, boolean serializeNulls) throws ProcessingException {
         MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(JsonWriter.class, "out")
                 .addParameter(elementClassName, "value")
-                .addException(IOException.class)
-                .addCode("// GsonPath does not support writing at this stage.\n");
+                .addException(IOException.class);
 
+        CodeBlock.Builder codeBlock = CodeBlock.builder();
+
+        mSafeVariableCount = 0;
+
+        // Initial block which prevents nulls being accessed.
+        codeBlock.beginControlFlow("if (value == null)");
+        codeBlock.addStatement("out.nullValue()");
+        codeBlock.addStatement("return");
+        codeBlock.endControlFlow();
+
+        codeBlock.add("\n");
+        codeBlock.add("// Begin\n");
+
+        writeObject(0, codeBlock, rootElements, "", serializeNulls);
+
+        writeMethod.addCode(codeBlock.build());
         return writeMethod.build();
+    }
+
+    private void writeObject(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, String currentPath, boolean serializeNulls) throws ProcessingException {
+        codeBlock.addStatement("out.beginObject()");
+
+        for (String key : jsonMapping.keySet()) {
+            Object value = jsonMapping.get(key);
+            if (value instanceof Element) {
+                Element field = (Element) value;
+
+                // Make sure the field's annotations don't have any problems.
+                validateFieldAnnotations(field);
+
+                String gsonFieldType = ProcessorUtil.getElementType(field);
+
+                //
+                // Handle the primitive the same way as their wrapper class.
+                // This ensures null safety is handled.
+                //
+                boolean isPrimitive = HANDLED_PRIMITIVES.contains(gsonFieldType);
+
+                String objectName = "obj" + mSafeVariableCount;
+                mSafeVariableCount++;
+
+                codeBlock.addStatement("$T $L = value.$L", value, objectName, field.getSimpleName().toString());
+
+                // If we aren't serializing nulls, we need to prevent the 'out.name' code being executed.
+                if (!isPrimitive && !serializeNulls) {
+                    codeBlock.beginControlFlow("if ($L != null)", objectName);
+                }
+                codeBlock.addStatement("out.name(\"$L\")", key);
+
+                // Since we are serializing nulls, we defer the if-statement until after the name is written.
+                if (!isPrimitive && serializeNulls) {
+                    codeBlock.beginControlFlow("if ($L != null)", objectName);
+                }
+
+                boolean isStringType = gsonFieldType.equals(STRING_CLASS_PATH);
+                if (isPrimitive || isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonFieldType)) {
+
+                    codeBlock.addStatement("out.value($L)", objectName);
+
+                } else {
+                    String adapterName;
+
+                    // TODO: Casting field to 'TypeElement' throws a cast exception, so we need to detect generics in a hacky way at the moment.
+                    boolean isGenericField = gsonFieldType.contains("<");
+                    if (isGenericField) {
+                        // This is a generic type
+                        adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", gsonFieldType);
+
+                    } else {
+                        adapterName = gsonFieldType + ".class";
+                    }
+
+                    codeBlock.addStatement("mGson.getAdapter($L).write(out, $L)", adapterName, objectName);
+
+                }
+
+                // If we are serializing nulls, we need to ensure we output it here.
+                if (!isPrimitive) {
+                    if (serializeNulls) {
+                        codeBlock.nextControlFlow("else");
+                        codeBlock.addStatement("out.nullValue()");
+                    }
+                    codeBlock.endControlFlow();
+                }
+                codeBlock.add("\n");
+
+            } else {
+                Map<String, Object> nextLevelMap = (Map<String, Object>) value;
+                if (nextLevelMap.size() > 0) {
+                    String newPath;
+                    if (currentPath.length() > 0) {
+                        newPath = currentPath + "." + key;
+                    } else {
+                        newPath = key;
+                    }
+
+                    // Add a comment mentioning what nested object we are current pointing at.
+                    codeBlock.add("\n// Begin $L\n", newPath);
+                    codeBlock.addStatement("out.name(\"$L\")", key);
+                    writeObject(fieldDepth + 1, codeBlock, nextLevelMap, newPath, serializeNulls);
+                }
+            }
+        }
+
+        codeBlock.add("// End $L\n", currentPath);
+        codeBlock.addStatement("out.endObject()");
     }
 
     @Override

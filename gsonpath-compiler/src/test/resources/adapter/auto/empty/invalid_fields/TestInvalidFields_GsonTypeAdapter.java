@@ -31,6 +31,14 @@ public final class TestInvalidFields_GsonTypeAdapter extends TypeAdapter<TestInv
 
     @Override
     public void write(JsonWriter out, TestInvalidFields value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        // End
+        out.endObject();
     }
 }

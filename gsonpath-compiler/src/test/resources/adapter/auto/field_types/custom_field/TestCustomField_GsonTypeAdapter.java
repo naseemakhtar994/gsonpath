@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
 import java.lang.Override;
+import java.util.Currency;
 
 public final class TestCustomField_GsonTypeAdapter extends TypeAdapter<TestCustomField> {
     private final Gson mGson;
@@ -58,6 +59,20 @@ public final class TestCustomField_GsonTypeAdapter extends TypeAdapter<TestCusto
 
     @Override
     public void write(JsonWriter out, TestCustomField value) throws IOException {
-        // GsonPath does not support writing at this stage.
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
+
+        // Begin
+        out.beginObject();
+        Currency obj0 = value.value1;
+        if (obj0 != null) {
+            out.name("value1");
+            mGson.getAdapter(java.util.Currency.class).write(out, obj0);
+        }
+
+        // End
+        out.endObject();
     }
 }
