@@ -8,6 +8,7 @@ import com.google.gson.stream.JsonWriter;
 import com.squareup.javapoet.*;
 import gsonpath.*;
 import gsonpath.generator.BaseAdapterGenerator;
+import gsonpath.generator.GsonFieldTree;
 import gsonpath.generator.HandleResult;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -75,16 +76,16 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         }
 
         // Obtain the correct mapping structure beforehand.
-        Map<String, Object> rootElements = new LinkedHashMap<>();
-        Map<String, Object> topLevelFieldMap = rootElements;
+        GsonFieldTree absoluteRootFieldTree = new GsonFieldTree();
+        GsonFieldTree gsonPathFieldTree = absoluteRootFieldTree;
 
         // The root element annotation prevents repetition in the SerializedName annotation.
         String rootField = autoGsonAnnotation.rootField();
         if (rootField.length() > 0) {
-            topLevelFieldMap = getElementsFromRoot(topLevelFieldMap, rootField, flattenDelimiter);
+            gsonPathFieldTree = getElementsFromRoot(gsonPathFieldTree, rootField, flattenDelimiter);
 
         } else {
-            topLevelFieldMap = rootElements;
+            gsonPathFieldTree = absoluteRootFieldTree;
         }
 
         for (Element field : fieldElements) {
@@ -121,36 +122,53 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 String[] split = jsonObjectName.split(regexSafeDelimiter);
                 int lastIndex = split.length - 1;
 
-                Map<String, Object> currentMap = topLevelFieldMap;
+                GsonFieldTree currentFieldTree = gsonPathFieldTree;
                 for (int i = 0; i < lastIndex + 1; i++) {
                     String currentKey = split[i];
 
                     if (i < lastIndex) {
-                        Object o = currentMap.get(currentKey);
+                        Object o = currentFieldTree.get(currentKey);
                         if (o == null) {
                             if (i < lastIndex) {
-                                Map<String, Object> newMap = new LinkedHashMap<>();
+                                GsonFieldTree newMap = new GsonFieldTree();
 
-                                currentMap.put(currentKey, newMap);
-                                currentMap = newMap;
+                                currentFieldTree.addTreeBranch(currentKey, newMap);
+                                currentFieldTree = newMap;
                             }
                         } else {
-                            currentMap = (Map<String, Object>) o;
+                            if (o instanceof GsonFieldTree) {
+                                currentFieldTree = (GsonFieldTree) o;
+
+                            } else {
+                                // If this value already exists, and it is not a tree branch, that means we have an invalid duplicate.
+                                throwDuplicateFieldException(field, currentKey);
+                            }
                         }
 
                     } else {
-                        currentMap.put(currentKey, field);
+                        // We have reached the end of this branch, add the field at the end.
+                        try {
+                            currentFieldTree.addField(currentKey, field);
+
+                        } catch (IllegalArgumentException e) {
+                            throwDuplicateFieldException(field, currentKey);
+                        }
                     }
                 }
 
             } else {
-                topLevelFieldMap.put(jsonObjectName, field);
+                try {
+                    gsonPathFieldTree.addField(jsonObjectName, field);
+
+                } catch (IllegalArgumentException e) {
+                    throwDuplicateFieldException(field, jsonObjectName);
+                }
             }
 
         }
 
-        typeBuilder.addMethod(createReadMethod(elementClassName, rootElements));
-        typeBuilder.addMethod(createWriteMethod(elementClassName, rootElements, serializeNulls));
+        typeBuilder.addMethod(createReadMethod(elementClassName, absoluteRootFieldTree));
+        typeBuilder.addMethod(createWriteMethod(elementClassName, absoluteRootFieldTree, serializeNulls));
 
         if (writeFile(elementPackagePath, typeBuilder)) {
             return new HandleResult(elementClassName, ClassName.get(elementPackagePath, adapterClassName));
@@ -159,10 +177,16 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         throw new ProcessingException();
     }
 
+    private void throwDuplicateFieldException(Element field, String jsonKey) throws ProcessingException {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Unexpected duplicate field '" + jsonKey + "' found. Each tree branch must use a unique value!", field);
+        throw new ProcessingException();
+    }
+
     /**
      * public ImageSizes read(JsonReader in) throws IOException {
      */
-    private MethodSpec createReadMethod(final ClassName elementClassName, Map<String, Object> rootElements) throws ProcessingException {
+    private MethodSpec createReadMethod(final ClassName elementClassName, GsonFieldTree rootElements) throws ProcessingException {
         MethodSpec.Builder readMethod = MethodSpec.methodBuilder("read")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
@@ -200,7 +224,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     /**
      * public void write(JsonWriter out, ImageSizes value) throws IOException {
      */
-    private MethodSpec createWriteMethod(ClassName elementClassName, Map<String, Object> rootElements, boolean serializeNulls) throws ProcessingException {
+    private MethodSpec createWriteMethod(ClassName elementClassName, GsonFieldTree rootElements, boolean serializeNulls) throws ProcessingException {
         MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
@@ -227,7 +251,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         return writeMethod.build();
     }
 
-    private void writeObject(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, String currentPath, boolean serializeNulls) throws ProcessingException {
+    private void writeObject(int fieldDepth, CodeBlock.Builder codeBlock, GsonFieldTree jsonMapping, String currentPath, boolean serializeNulls) throws ProcessingException {
         codeBlock.addStatement("out.beginObject()");
 
         for (String key : jsonMapping.keySet()) {
@@ -295,7 +319,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 codeBlock.add("\n");
 
             } else {
-                Map<String, Object> nextLevelMap = (Map<String, Object>) value;
+                GsonFieldTree nextLevelMap = (GsonFieldTree) value;
                 if (nextLevelMap.size() > 0) {
                     String newPath;
                     if (currentPath.length() > 0) {

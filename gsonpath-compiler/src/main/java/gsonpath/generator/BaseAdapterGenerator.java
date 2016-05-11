@@ -41,29 +41,31 @@ public abstract class BaseAdapterGenerator extends Generator {
         super(processingEnv);
     }
 
-    protected Map<String, Object> getElementsFromRoot(Map<String, Object> rootElements, String rootField, char delimiter) {
+    protected GsonFieldTree getElementsFromRoot(GsonFieldTree rootFieldTree, String rootField, char delimiter) {
         if (rootField.length() > 0) {
             // Ensure that the delimiter is correctly escaped before attempting to split the string.
             String regexSafeDelimiter = Pattern.quote(String.valueOf(delimiter));
             String[] split = rootField.split(regexSafeDelimiter);
 
             if (split.length > 0) {
+                // Keep adding branches to the tree and switching our root to the new branch.
                 for (String field : split) {
-                    Map<String, Object> mapWithRoot = new LinkedHashMap<>();
-                    rootElements.put(field, mapWithRoot);
-                    rootElements = mapWithRoot;
+                    GsonFieldTree currentTree = new GsonFieldTree();
+                    rootFieldTree.addTreeBranch(field, currentTree);
+                    rootFieldTree = currentTree;
                 }
 
-                return rootElements;
+                return rootFieldTree;
 
             } else {
-                Map<String, Object> mapWithRoot = new LinkedHashMap<>();
-                rootElements.put(rootField, mapWithRoot);
+                // Add a single branch to the tree and return the new branch.
+                GsonFieldTree mapWithRoot = new GsonFieldTree();
+                rootFieldTree.addTreeBranch(rootField, mapWithRoot);
                 return mapWithRoot;
             }
         }
 
-        return rootElements;
+        return rootFieldTree;
     }
 
     public interface ObjectParserCallback {
@@ -74,7 +76,7 @@ public abstract class BaseAdapterGenerator extends Generator {
         void onNodeEmpty();
     }
 
-    protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, Map<String, Object> jsonMapping, ObjectParserCallback callback) throws ProcessingException {
+    protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, GsonFieldTree jsonMapping, ObjectParserCallback callback) throws ProcessingException {
         String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
 
@@ -197,7 +199,7 @@ public abstract class BaseAdapterGenerator extends Generator {
                 mSafeVariableCount++;
 
             } else {
-                Map<String, Object> nextLevelMap = (Map<String, Object>) value;
+                GsonFieldTree nextLevelMap = (GsonFieldTree) value;
                 if (nextLevelMap.size() == 0) {
                     callback.onNodeEmpty();
                     addBreak = false;
