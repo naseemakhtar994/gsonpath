@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import com.squareup.javapoet.*;
 import gsonpath.*;
 import gsonpath.generator.BaseAdapterGenerator;
+import gsonpath.generator.GsonFieldTree;
 import gsonpath.generator.HandleResult;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -14,9 +15,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
@@ -63,7 +62,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         // This flag is only valid if the rootField value is populated, since it only affects the behaviour of rootField.
         final boolean consumeReaderFully = autoGsonArrayAnnotation.consumeReaderFully() && isRootFieldSpecified;
 
-        Map<String, Object> rootElements = new LinkedHashMap<>();
+        GsonFieldTree rootElements = new GsonFieldTree();
         if (isRootFieldSpecified) {
             getElementsFromRoot(rootElements, rootField, flattenDelimiter);
         }
@@ -271,7 +270,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         builder.addStatement("in.endArray()");
     }
 
-    private void addToSimpleCodeBlock(CodeBlock.Builder builder, Map<String, Object> rootElements, ObjectParserCallback callback) throws ProcessingException {
+    private void addToSimpleCodeBlock(CodeBlock.Builder builder, GsonFieldTree rootElements, ObjectParserCallback callback) throws ProcessingException {
         builder.beginControlFlow("try");
         if (rootElements.size() > 0) {
             mCounterVariableCount = 0;

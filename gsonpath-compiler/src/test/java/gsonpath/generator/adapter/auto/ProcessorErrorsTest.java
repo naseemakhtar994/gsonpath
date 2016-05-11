@@ -12,8 +12,8 @@ import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 
 public class ProcessorErrorsTest extends BaseGeneratorTest {
     @Test
-    public void testInvalidType() {
-        JavaFileObject source = JavaFileObjects.forResource("adapter/auto/processor_errors/TestProcessorErrors.java");
+    public void testInvalidFieldType() {
+        JavaFileObject source = JavaFileObjects.forResource("adapter/auto/processor_errors/TestInvalidFieldTypeError.java");
 
         assertAbout(javaSource()).that(source)
                 .processedWith(new GsonProcessor())
@@ -21,5 +21,29 @@ public class ProcessorErrorsTest extends BaseGeneratorTest {
                 .withErrorContaining("Invalid field type: java.lang.Object")
                 .in(source)
                 .onLine(8);
+    }
+
+    @Test
+    public void testInvalidFieldPath() {
+        JavaFileObject source = JavaFileObjects.forResource("adapter/auto/processor_errors/TestInvalidFieldPathError.java");
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .failsToCompile()
+                .withErrorContaining("Unexpected duplicate field 'value' found. Each tree branch must use a unique value!")
+                .in(source)
+                .onLine(16);
+    }
+
+    @Test
+    public void testDuplicateFieldError() {
+        JavaFileObject source = JavaFileObjects.forResource("adapter/auto/processor_errors/TestDuplicateFieldError.java");
+
+        assertAbout(javaSource()).that(source)
+                .processedWith(new GsonProcessor())
+                .failsToCompile()
+                .withErrorContaining("Unexpected duplicate field 'value' found. Each tree branch must use a unique value!")
+                .in(source)
+                .onLine(13);
     }
 }

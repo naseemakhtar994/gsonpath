@@ -13,8 +13,8 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
 
-import com.google.gson.annotations.SerializedName;
 import gsonpath.generator.*;
 import gsonpath.generator.adapter.AutoGsonAdapterGenerator;
 import gsonpath.generator.adapter.TypeAdapterLoaderGenerator;
@@ -23,20 +23,28 @@ import gsonpath.generator.streamer.StreamArrayLoaderGenerator;
 
 @AutoService(Processor.class)
 public class GsonProcessor extends AbstractProcessor {
+    private static final String LOG_PREFIX = "Gson Path: ";
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
+        if (annotations == null || annotations.size() == 0) {
+            return false;
+        }
+
+        System.out.println();
+        printMessage("Started annotation processing");
         Set<? extends Element> generatedAdapters = env.getElementsAnnotatedWith(AutoGsonAdapter.class);
 
         // Handle the standard type adapters.
         List<HandleResult> autoGsonAdapterResults = new ArrayList<>();
         AutoGsonAdapterGenerator adapterGenerator = new AutoGsonAdapterGenerator(processingEnv);
         for (Element element : generatedAdapters) {
-            System.out.println("Handling element: " + element.getSimpleName());
+            printMessage(String.format("Generating TypeAdapter (%s)", element));
 
             try {
                 autoGsonAdapterResults.add(adapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
+                printError("Error while generating TypeAdapter", element);
                 return false;
             }
 
@@ -44,6 +52,7 @@ public class GsonProcessor extends AbstractProcessor {
 
         if (autoGsonAdapterResults.size() > 0) {
             if (!new TypeAdapterLoaderGenerator(processingEnv).generate(autoGsonAdapterResults)) {
+                printError("Error while generating TypeAdapterFactory");
                 return false;
             }
         }
@@ -54,11 +63,12 @@ public class GsonProcessor extends AbstractProcessor {
         List<HandleResult> AutoGsonArrayStreamerResults = new ArrayList<>();
         GsonArrayStreamerGenerator arrayAdapterGenerator = new GsonArrayStreamerGenerator(processingEnv);
         for (Element element : generatedArrayAdapters) {
-            System.out.println("Handling element: " + element.getSimpleName());
+            printMessage(String.format("Generating StreamAdapter (%s)", element));
 
             try {
                 AutoGsonArrayStreamerResults.add(arrayAdapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
+                printError("Error while generating StreamAdapter", element);
                 return false;
             }
 
@@ -66,11 +76,26 @@ public class GsonProcessor extends AbstractProcessor {
 
         if (AutoGsonArrayStreamerResults.size() > 0) {
             if (!new StreamArrayLoaderGenerator(processingEnv).generate(AutoGsonArrayStreamerResults)) {
+                printError("Error while generating StreamAdapterFactory");
                 return false;
             }
         }
+        printMessage("Finished annotation processing");
+        System.out.println();
 
         return false;
+    }
+
+    private void printMessage(String message) {
+        System.out.println(LOG_PREFIX + message);
+    }
+
+    private void printError(String message) {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, LOG_PREFIX + message);
+    }
+
+    private void printError(String message, Element element) {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, LOG_PREFIX + message, element);
     }
 
     @Override
@@ -78,8 +103,6 @@ public class GsonProcessor extends AbstractProcessor {
         Set<String> supportedTypes = new LinkedHashSet<>();
         supportedTypes.add(AutoGsonAdapter.class.getCanonicalName());
         supportedTypes.add(AutoGsonArrayStreamer.class.getCanonicalName());
-        supportedTypes.add(FlattenJson.class.getCanonicalName());
-        supportedTypes.add(SerializedName.class.getCanonicalName());
         return supportedTypes;
     }
 
