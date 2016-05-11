@@ -134,8 +134,9 @@ public abstract class BaseAdapterGenerator extends Generator {
             codeBlock.addStatement("$L++", counterVariableName);
 
             Object value = jsonMapping.get(key);
-            if (value instanceof Element) {
-                Element field = (Element) value;
+            if (value instanceof FieldInfo) {
+                FieldInfo fieldInfo = (FieldInfo) value;
+                Element field = fieldInfo.element;
 
                 // Make sure the field's annotations don't have any problems.
                 validateFieldAnnotations(field);
@@ -194,6 +195,12 @@ public abstract class BaseAdapterGenerator extends Generator {
 
                 codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
                 codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
+
+                if (fieldInfo.isRequired) {
+                    codeBlock.nextControlFlow("else");
+                    codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON element '$L' not found for class '$L'\")", fieldInfo.jsonPath, field.getEnclosingElement());
+                }
+
                 codeBlock.endControlFlow(); // if
 
                 mSafeVariableCount++;

@@ -8,6 +8,7 @@ import com.google.gson.stream.JsonWriter;
 import com.squareup.javapoet.*;
 import gsonpath.*;
 import gsonpath.generator.BaseAdapterGenerator;
+import gsonpath.generator.FieldInfo;
 import gsonpath.generator.GsonFieldTree;
 import gsonpath.generator.HandleResult;
 
@@ -52,6 +53,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
         FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
         boolean serializeNulls = autoGsonAnnotation.serializeNulls();
+        FieldPolicy fieldPolicy = autoGsonAnnotation.fieldPolicy();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -108,6 +110,27 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 jsonObjectName = applyFieldNamingPolicy(fieldNamingPolicy, fieldName);
             }
 
+            boolean isMandatory = field.getAnnotation(Mandatory.class) != null;
+            boolean isOptional = field.getAnnotation(Optional.class) != null;
+
+            // Fields cannot use both annotations.
+            if (isMandatory && isOptional) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Field cannot have both Mandatory and Optional annotations", field);
+                throw new ProcessingException();
+            }
+
+            boolean isRequired = isMandatory;
+
+            // Using this policy everything is mandatory except for optionals.
+            if (fieldPolicy == FieldPolicy.FAIL_ALL_EXCEPT_OPTIONAL) {
+                isRequired = true;
+            }
+
+            // Optionals will never fail regardless of the policy.
+            if (isOptional || fieldPolicy == FieldPolicy.NEVER_FAIL) {
+                isRequired = false;
+            }
+
             if (jsonObjectName.contains(String.valueOf(flattenDelimiter))) {
                 //
                 // When the last character is a delimiter, we should append the variable name to
@@ -148,7 +171,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                     } else {
                         // We have reached the end of this branch, add the field at the end.
                         try {
-                            currentFieldTree.addField(currentKey, field);
+                            currentFieldTree.addField(currentKey, new FieldInfo(field, jsonObjectName, isRequired));
 
                         } catch (IllegalArgumentException e) {
                             throwDuplicateFieldException(field, currentKey);
@@ -158,7 +181,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             } else {
                 try {
-                    gsonPathFieldTree.addField(jsonObjectName, field);
+                    gsonPathFieldTree.addField(jsonObjectName, new FieldInfo(field, jsonObjectName, isRequired));
 
                 } catch (IllegalArgumentException e) {
                     throwDuplicateFieldException(field, jsonObjectName);
@@ -256,8 +279,9 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         for (String key : jsonMapping.keySet()) {
             Object value = jsonMapping.get(key);
-            if (value instanceof Element) {
-                Element field = (Element) value;
+            if (value instanceof FieldInfo) {
+                FieldInfo fieldInfo = (FieldInfo) value;
+                Element field = fieldInfo.element;
 
                 // Make sure the field's annotations don't have any problems.
                 validateFieldAnnotations(field);
@@ -273,7 +297,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 String objectName = "obj" + mSafeVariableCount;
                 mSafeVariableCount++;
 
-                codeBlock.addStatement("$T $L = value.$L", value, objectName, field.getSimpleName().toString());
+                codeBlock.addStatement("$T $L = value.$L", field, objectName, field.getSimpleName().toString());
 
                 // If we aren't serializing nulls, we need to prevent the 'out.name' code being executed.
                 if (!isPrimitive && !serializeNulls) {

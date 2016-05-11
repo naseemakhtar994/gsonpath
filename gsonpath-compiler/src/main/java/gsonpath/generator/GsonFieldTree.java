@@ -1,6 +1,5 @@
 package gsonpath.generator;
 
-import javax.lang.model.element.Element;
 import java.util.LinkedHashMap;
 
 public class GsonFieldTree {
@@ -14,7 +13,7 @@ public class GsonFieldTree {
         fieldMap.put(branchName, gsonFieldTree);
     }
 
-    public void addField(String branchName, Element field) throws IllegalArgumentException {
+    public void addField(String branchName, FieldInfo field) throws IllegalArgumentException {
         if (fieldMap.containsKey(branchName)) {
             throw new IllegalArgumentException("Value already exists");
         }
