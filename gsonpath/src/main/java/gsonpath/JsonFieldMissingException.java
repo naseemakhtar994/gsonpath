@@ -1,6 +1,8 @@
 package gsonpath;
 
-public class JsonFieldMissingException extends RuntimeException {
+import java.io.IOException;
+
+public class JsonFieldMissingException extends IOException {
     public JsonFieldMissingException(String message) {
         super(message);
     }

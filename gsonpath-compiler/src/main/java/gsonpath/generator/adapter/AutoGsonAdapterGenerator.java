@@ -26,6 +26,8 @@ import java.util.regex.Pattern;
 
 public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
+    private Map<String, MandatoryFieldInfo> mandatoryInfoMap;
+
     public AutoGsonAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
@@ -190,6 +192,18 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         }
 
+        // Adds the mandatory field index constants and also populates the mandatoryInfoMap values.
+        mandatoryInfoMap = new LinkedHashMap<>();
+        addMandatoryFieldConstants(typeBuilder, absoluteRootFieldTree);
+
+        int mandatoryFieldSize = mandatoryInfoMap.size();
+        if (mandatoryFieldSize > 0) {
+            typeBuilder.addField(FieldSpec.builder(TypeName.INT, "MANDATORY_FIELDS_SIZE")
+                    .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                    .initializer("" + mandatoryFieldSize)
+                    .build());
+        }
+
         typeBuilder.addMethod(createReadMethod(elementClassName, absoluteRootFieldTree));
         typeBuilder.addMethod(createWriteMethod(elementClassName, absoluteRootFieldTree, serializeNulls));
 
@@ -198,6 +212,41 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         }
 
         throw new ProcessingException();
+    }
+
+    /**
+     * Add any mandatory field indexes as constants. This is done for code readability.
+     * We will obtain the values using a depth-first recursion.
+     */
+    private void addMandatoryFieldConstants(TypeSpec.Builder typeBuilder, GsonFieldTree gsonFieldTree) {
+        for (String branchKey : gsonFieldTree.keySet()) {
+            Object treeObject = gsonFieldTree.get(branchKey);
+
+            if (treeObject instanceof FieldInfo) {
+                FieldInfo info = (FieldInfo) treeObject;
+
+                //
+                // For all required fields we add an index field so we can easily check whether the
+                // value has been assigned after the json has been parsed.
+                //
+                if (info.isRequired) {
+                    int mandatoryFieldSize = mandatoryInfoMap.size();
+                    String fieldName = info.element.getSimpleName().toString();
+
+                    String mandatoryFieldIndexName = "MANDATORY_INDEX_" + fieldName.toUpperCase();
+                    typeBuilder.addField(FieldSpec.builder(TypeName.INT, mandatoryFieldIndexName)
+                            .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                            .initializer("" + mandatoryFieldSize)
+                            .build());
+
+                    // Keep track of the information for later use. Since this is a linked list, we keep track of insert order.
+                    mandatoryInfoMap.put(fieldName, new MandatoryFieldInfo(mandatoryFieldIndexName, info));
+                }
+            } else {
+                // Recursive call, navigating further down the tree.
+                addMandatoryFieldConstants(typeBuilder, (GsonFieldTree) treeObject);
+            }
+        }
     }
 
     private void throwDuplicateFieldException(Element field, String jsonKey) throws ProcessingException {
@@ -231,12 +280,57 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             @Override
             public void onInitialise() {
                 codeBlock.addStatement("$T result = new $T()", elementClassName, elementClassName);
+
+                // If we have any mandatory fields, we need to keep track of what has been assigned.
+                if (mandatoryInfoMap.size() > 0) {
+                    codeBlock.addStatement("boolean[] mandatoryFieldsCheckList = new boolean[MANDATORY_FIELDS_SIZE]");
+                }
+            }
+
+            @Override
+            public void onFieldAssigned(String fieldName) {
+                MandatoryFieldInfo mandatoryFieldInfo = mandatoryInfoMap.get(fieldName);
+
+                // When a field has been assigned, if it is a mandatory value, we note this down.
+                if (mandatoryFieldInfo != null) {
+                    codeBlock.addStatement("mandatoryFieldsCheckList[$L] = true", mandatoryFieldInfo.indexVariableName);
+                    codeBlock.add("\n");
+                }
             }
 
             @Override
             public void onNodeEmpty() {
             }
         });
+
+        // If we have any mandatory fields, we now check if any values have been missed. If they are, it will raise an exception here.
+        if (mandatoryInfoMap.size() > 0) {
+            codeBlock.add("\n// Mandatory object validation\n");
+            codeBlock.beginControlFlow("for (int mandatoryFieldIndex = 0; mandatoryFieldIndex < MANDATORY_FIELDS_SIZE; mandatoryFieldIndex++)");
+
+            codeBlock.add("\n// Check if a mandatory value is missing.\n");
+            codeBlock.beginControlFlow("if (!mandatoryFieldsCheckList[mandatoryFieldIndex])");
+
+            // The code must figure out the correct field name to insert into the error message.
+            codeBlock.add("\n// Find the field name of the missing json value.\n");
+            codeBlock.addStatement("String fieldName = null");
+            codeBlock.beginControlFlow("switch (mandatoryFieldIndex)");
+
+            for (String mandatoryKey : mandatoryInfoMap.keySet()) {
+                MandatoryFieldInfo mandatoryFieldInfo = mandatoryInfoMap.get(mandatoryKey);
+                codeBlock.add("case $L:\n", mandatoryFieldInfo.indexVariableName);
+                codeBlock.indent();
+                codeBlock.addStatement("fieldName = \"$L\"", mandatoryFieldInfo.fieldInfo.jsonPath);
+                codeBlock.addStatement("break");
+                codeBlock.unindent();
+                codeBlock.add("\n");
+            }
+
+            codeBlock.endControlFlow(); // Switch
+            codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON element '\" + fieldName + \"' was not found for class '$L'\")", elementClassName);
+            codeBlock.endControlFlow(); // If
+            codeBlock.endControlFlow(); // For
+        }
 
         codeBlock.addStatement("return result");
         readMethod.addCode(codeBlock.build());
@@ -413,6 +507,19 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         // Applies the naming transformation on the input field name.
         return fieldNamingPolicy.translateName(fakeField);
+    }
+
+    /**
+     * Keeps track of mandatory json field metadata.
+     */
+    private static class MandatoryFieldInfo {
+        final String indexVariableName;
+        final FieldInfo fieldInfo;
+
+        private MandatoryFieldInfo(String indexVariableName, FieldInfo fieldInfo) {
+            this.indexVariableName = indexVariableName;
+            this.fieldInfo = fieldInfo;
+        }
     }
 
 }

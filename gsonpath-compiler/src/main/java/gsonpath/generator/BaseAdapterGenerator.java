@@ -73,6 +73,8 @@ public abstract class BaseAdapterGenerator extends Generator {
 
         void onInitialise();
 
+        void onFieldAssigned(String fieldName);
+
         void onNodeEmpty();
     }
 
@@ -193,12 +195,16 @@ public abstract class BaseAdapterGenerator extends Generator {
                     codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)", gsonMethodType, mSafeVariableCount, adapterName);
                 }
 
+                String fieldName = field.getSimpleName().toString();
                 codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
-                codeBlock.addStatement("result.$L = safeValue$L$L", field.getSimpleName().toString(), mSafeVariableCount, callToString ? ".toString()" : "");
+                codeBlock.addStatement("result.$L = safeValue$L$L", fieldName, mSafeVariableCount, callToString ? ".toString()" : "");
+
+                // Inform the callback in case it wishes to add any further code.
+                callback.onFieldAssigned(fieldName);
 
                 if (fieldInfo.isRequired) {
                     codeBlock.nextControlFlow("else");
-                    codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON element '$L' not found for class '$L'\")", fieldInfo.jsonPath, field.getEnclosingElement());
+                    codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON element '$L' was null for class '$L'\")", fieldInfo.jsonPath, field.getEnclosingElement());
                 }
 
                 codeBlock.endControlFlow(); // if
