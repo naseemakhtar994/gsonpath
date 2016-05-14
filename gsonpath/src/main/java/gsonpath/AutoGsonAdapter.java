@@ -109,4 +109,6 @@ public @interface AutoGsonAdapter {
     FieldNamingPolicy fieldNamingPolicy() default FieldNamingPolicy.IDENTITY;
 
     boolean serializeNulls() default false;
+
+    FieldPolicy fieldPolicy() default FieldPolicy.NEVER_FAIL;
 }

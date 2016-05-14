@@ -92,6 +92,11 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
                 }
 
                 @Override
+                public void onFieldAssigned(String fieldName) {
+
+                }
+
+                @Override
                 public void onNodeEmpty() {
                     if (consumeReaderFully) {
                         // Since we read the json entirely, we cannot return here.
@@ -145,6 +150,11 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
                 @Override
                 public void onInitialise() {
+
+                }
+
+                @Override
+                public void onFieldAssigned(String fieldName) {
 
                 }
 
@@ -203,6 +213,11 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
                 @Override
                 public void onInitialise() {
                     addStreamInitializerToCodeBlock(streamCodeBlock, elementClassName);
+                }
+
+                @Override
+                public void onFieldAssigned(String fieldName) {
+
                 }
 
                 @Override
