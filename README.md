@@ -199,6 +199,6 @@ For now, you can obtain it via [Jitpack](https://jitpack.io/docs/)
 
 Gradle:
 ```gradle
-compile 'com.github.lachlanm.gsonpath:gsonpath:1.1.1'
-apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.1.1'
+compile 'com.github.lachlanm.gsonpath:gsonpath:1.3.0'
+apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.3.0'
 ```
