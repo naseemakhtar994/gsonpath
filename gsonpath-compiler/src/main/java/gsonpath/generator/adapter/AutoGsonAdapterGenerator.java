@@ -13,6 +13,7 @@ import gsonpath.generator.GsonFieldTree;
 import gsonpath.generator.HandleResult;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
@@ -55,7 +56,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
         FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
         boolean serializeNulls = autoGsonAnnotation.serializeNulls();
-        FieldPolicy fieldPolicy = autoGsonAnnotation.fieldPolicy();
+        GsonFieldValidationType gsonFieldValidationType = autoGsonAnnotation.fieldValidationType();
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -112,8 +113,28 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 jsonObjectName = applyFieldNamingPolicy(fieldNamingPolicy, fieldName);
             }
 
-            boolean isMandatory = field.getAnnotation(Mandatory.class) != null;
-            boolean isOptional = field.getAnnotation(Optional.class) != null;
+            boolean isMandatory = false;
+            boolean isOptional = false;
+
+            // Attempt to find a Nullable or NonNull annotation type.
+            for (AnnotationMirror annotationMirror : field.getAnnotationMirrors()) {
+                Element annotationElement = annotationMirror.getAnnotationType().asElement();
+
+                switch (annotationElement.getSimpleName().toString())
+                {
+                    case "Nullable":
+                        isOptional = true;
+                        break;
+
+                    // Intentional fall-through. There are several different variations!
+                    case "NonNull":
+                    case "Nonnull":
+                    case "NotNull":
+                    case "Notnull":
+                        isMandatory = true;
+                        break;
+                }
+            }
 
             // Fields cannot use both annotations.
             if (isMandatory && isOptional) {
@@ -121,15 +142,23 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 throw new ProcessingException();
             }
 
+            // Primitives should not use either annotation.
+            if (isMandatory || isOptional) {
+                if (field.asType().getKind().isPrimitive()) {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Primitives should not use NonNull or Nullable annotations", field);
+                    throw new ProcessingException();
+                }
+            }
+
             boolean isRequired = isMandatory;
 
             // Using this policy everything is mandatory except for optionals.
-            if (fieldPolicy == FieldPolicy.FAIL_ALL_EXCEPT_OPTIONAL) {
+            if (gsonFieldValidationType == GsonFieldValidationType.VALIDATE_ALL_EXCEPT_NULLABLE) {
                 isRequired = true;
             }
 
             // Optionals will never fail regardless of the policy.
-            if (isOptional || fieldPolicy == FieldPolicy.NEVER_FAIL) {
+            if (isOptional || gsonFieldValidationType == GsonFieldValidationType.NO_VALIDATION) {
                 isRequired = false;
             }
 

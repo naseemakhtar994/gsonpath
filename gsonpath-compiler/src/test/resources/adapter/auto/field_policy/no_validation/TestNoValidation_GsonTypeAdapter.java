@@ -1,4 +1,4 @@
-package adapter.auto.field_policy.never_fail;
+package adapter.auto.field_policy.no_validation;
 
 import static gsonpath.GsonUtil.*;
 
@@ -8,23 +8,24 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
+import java.lang.Integer;
 import java.lang.Override;
 
-public final class TestNeverFail_GsonTypeAdapter extends TypeAdapter<TestNeverFail> {
+public final class TestNoValidation_GsonTypeAdapter extends TypeAdapter<TestNoValidation> {
     private final Gson mGson;
 
-    public TestNeverFail_GsonTypeAdapter(Gson gson) {
+    public TestNoValidation_GsonTypeAdapter(Gson gson) {
         this.mGson = gson;
     }
 
     @Override
-    public TestNeverFail read(JsonReader in) throws IOException {
+    public TestNoValidation read(JsonReader in) throws IOException {
 
         // Ensure the object is not null.
         if (!isValidValue(in)) {
             return null;
         }
-        TestNeverFail result = new TestNeverFail();
+        TestNoValidation result = new TestNoValidation();
 
         int jsonFieldCounter0 = 0;
         in.beginObject();
@@ -75,7 +76,7 @@ public final class TestNeverFail_GsonTypeAdapter extends TypeAdapter<TestNeverFa
     }
 
     @Override
-    public void write(JsonWriter out, TestNeverFail value) throws IOException {
+    public void write(JsonWriter out, TestNoValidation value) throws IOException {
         if (value == null) {
             out.nullValue();
             return;
@@ -83,18 +84,22 @@ public final class TestNeverFail_GsonTypeAdapter extends TypeAdapter<TestNeverFa
 
         // Begin
         out.beginObject();
-        int obj0 = value.optional1;
-        out.name("optional1");
-        out.value(obj0);
+        Integer obj0 = value.optional1;
+        if (obj0 != null) {
+            out.name("optional1");
+            out.value(obj0);
+        }
 
-        int obj1 = value.optional2;
-        out.name("optional2");
-        out.value(obj1)
+        Integer obj1 = value.optional2;
+        if (obj1 != null) {
+            out.name("optional2");
+            out.value(obj1);
+        }
 
         int obj2 = value.optional3;
         out.name("optional3");
         out.value(obj2);
-        
+
         // End
         out.endObject();
     }

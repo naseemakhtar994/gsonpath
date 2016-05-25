@@ -1,9 +1,9 @@
 package gsonpath.mandatory;
 
 import gsonpath.AutoGsonAdapter;
-import gsonpath.FieldPolicy;
+import gsonpath.GsonFieldValidationType;
 
-@AutoGsonAdapter(fieldPolicy = FieldPolicy.FAIL_ALL_EXCEPT_OPTIONAL)
+@AutoGsonAdapter(fieldValidationType = GsonFieldValidationType.VALIDATE_ALL_EXCEPT_NULLABLE)
 public class MandatorySampleModel {
     int test;
 }
