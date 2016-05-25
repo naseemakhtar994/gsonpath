@@ -12,11 +12,11 @@ Version 1.4.0 *(2016-05-26)*
         * VALIDATE_EXPLICIT_NON_NULL - Any Objects marked with `@NonNull` (or similar), or primitives should fail if the value does not exist within the JSON.
         * VALIDATE_ALL_EXCEPT_NULLABLE - All fields will be treated as `@NonNull`, and should fail when value is not found, unless the field is annotation with `@Nullable` (except for primitives).
  * New: Added a default configuration concept for the `@AutoGsonAdapter` annotation.
-     * Allows developers to set default values for the annotation if they are unhappy with the default values provided within the annotation.
-        * Some developers may not like the '.' character being used as a delimiter, and wish to make the change everyone in one place.
+     * Allows developers to set default values for the annotation if they are unhappy with the default values provided within the `@AutoGsonAdapter` annotation.
+        * Some developers may not like the '.' character being used as a delimiter. With this new feature a developer can change this delimiter throughout the entire application using the default configuration instead of changing every single `@AutoGsonAdapter` annotation.
      * To use this feature, developers must:
-        * Annotate a class with the new `@GsonPathDefaultConfiguration` annotation and specify specify default values
-        * Point the `defaultConfiguration` property within the `@AutoGsonAdapter` annotation to this class on every usage of `@AutoGsonAdapter`
+        * Annotate a class with the new `@GsonPathDefaultConfiguration` annotation and specify their desired default values
+        * Set the `defaultConfiguration` property within the `@AutoGsonAdapter` annotation to point to this class on every usage of `@AutoGsonAdapter` that wishes to use these defaults.
      * See the annotation javadoc for further details.
 
 Version 1.3.0 *(2016-05-14)*
