@@ -1,7 +1,5 @@
 package gsonpath;
 
-import com.google.gson.FieldNamingPolicy;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -47,12 +45,26 @@ import java.lang.annotation.Target;
  * <p/>
  * Note: As a consequence of generating code at compile time, some flexibility is lost surrounding
  * {@link com.google.gson.Gson} configurations. Therefore any Gson specific configurations
- * (such as {@link FieldNamingPolicy}) must be specified within the annotation itself.
+ * (such as {@link GsonPathFieldNamingPolicy}) must be specified within the annotation itself.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 public @interface AutoGsonAdapter {
-    boolean ignoreNonAnnotatedFields() default false;
+    /**
+     * Specifies a set of defaults which can be used to set a different set of defaults as opposed
+     * to the ones provided out of the box.
+     * <p/>
+     * For further information about how to use this, see {@link GsonPathDefaultConfiguration}
+     */
+    Class<?> defaultConfiguration() default void.class;
+
+    /**
+     * Determines whether fields that do not use the 'SerializedName' gson annotation are added to the Type Adapter
+     * or not. By default all fields are added.
+     * <p/>
+     * To exclude fields on a case-by-case basis, see {@link gsonpath.ExcludeField}
+     */
+    InheritableBoolean ignoreNonAnnotatedFields() default InheritableBoolean.FALSE_OR_INHERIT_DEFAULT_IF_AVAILABLE;
 
     /**
      * Specifies the root field where the generated {@link com.google.gson.TypeAdapter} will begin
@@ -97,18 +109,39 @@ public @interface AutoGsonAdapter {
      * By default this is set to using the '.' character. If required you can override
      * this to using a different character, and all the fields within this class will
      * use this delimiter instead.
+     * <p/>
+     * Value will inherit from a 'defaults' class which uses the {@link GsonPathDefaultConfiguration}
+     * annotation. If you don't wish to inherit, specify an explicit delimiter.
      */
-    char flattenDelimiter() default '.';
+    FlattenDelimiter flattenDelimiter() default @FlattenDelimiter(value = '.', inheritDefaultIfAvailable = true);
 
     /**
      * Exposes the Gson field naming policy at compile time rather than runtime.
      * <p/>
      * Note: This will affect every version of this class regardless of how the
      * gson object is constructed.
+     * <p/>
+     * Value will inherit from a 'defaults' class which uses the {@link GsonPathDefaultConfiguration}
+     * annotation. If you don't wish to inherit, specify an explicit fieldNamingPolicy.
      */
-    FieldNamingPolicy fieldNamingPolicy() default FieldNamingPolicy.IDENTITY;
+    GsonPathFieldNamingPolicy fieldNamingPolicy() default GsonPathFieldNamingPolicy.IDENTITY_OR_INHERIT_DEFAULT_IF_AVAILABLE;
 
-    boolean serializeNulls() default false;
+    /**
+     * Determines whether the Type Adapter will allow null values into the JSON when writing.
+     * <p/>
+     * Refer to the Gson documentation for further details.
+     */
+    InheritableBoolean serializeNulls() default InheritableBoolean.FALSE_OR_INHERIT_DEFAULT_IF_AVAILABLE;
 
-    GsonFieldValidationType fieldValidationType() default GsonFieldValidationType.NO_VALIDATION;
+    /**
+     * Defines validation rule which can be used to ensure that the parsed JSON conforms to a particular format.
+     * <p/>
+     * If the validation is enabled and a JSON document does not conform, an exception will be thrown, and the
+     * parser will stop immediately.
+     * <p/>
+     * The validation is relies on the 'NonNull' (also 'Nonnull', 'NotNull' and 'Notnull') and 'Nullable' annotations.
+     * <p/>
+     * The feature allows you to create a contract where you can be sure that the POJO has all the data that you expect.
+     */
+    GsonFieldValidationType fieldValidationType() default GsonFieldValidationType.NO_VALIDATION_OR_INHERIT_DEFAULT_IF_AVAILABLE;
 }
