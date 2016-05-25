@@ -7,7 +7,7 @@ Version 1.4.0 *(2016-05-26)*
  * New: Made changes to the mandatory field feature to make it more useful. The changes are described below:
      * Removed `@Mandatory` and `@Optional`. Instead the annotation processor will attempt to find any `@Nullable` or `Nonnull` (as well as other permutations such as `NonNull`, `NotNull` and `Notnull`) annotations, and use those instead.
      * The `@AutoGsonAdapter` annotation property `fieldPolicy` has been renamed to `fieldValidationType` to be more clear.
-     * The fieldValidationType enum values have the same behaviour as before, however they have been renamed to clearer as well:
+     * The fieldValidationType enum values have the same behaviour as before, however they have been renamed to be clearer as well:
         * NO_VALIDATION - No fields are validated, and the Gson parser should never raise exceptions for missing content.
         * VALIDATE_EXPLICIT_NON_NULL - Any Objects marked with `@NonNull` (or similar), or primitives should fail if the value does not exist within the JSON.
         * VALIDATE_ALL_EXCEPT_NULLABLE - All fields will be treated as `@NonNull`, and should fail when value is not found, unless the field is annotation with `@Nullable` (except for primitives).
