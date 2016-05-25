@@ -17,6 +17,8 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.MirroredTypeException;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -52,11 +54,85 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 .addMethod(constructor);
 
         AutoGsonAdapter autoGsonAnnotation = element.getAnnotation(AutoGsonAdapter.class);
-        boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields();
-        char flattenDelimiter = autoGsonAnnotation.flattenDelimiter();
-        FieldNamingPolicy fieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
-        boolean serializeNulls = autoGsonAnnotation.serializeNulls();
+
+        boolean fieldsRequireAnnotation = autoGsonAnnotation.ignoreNonAnnotatedFields().booleanValue;
+        boolean serializeNulls = autoGsonAnnotation.serializeNulls().booleanValue;
+        char flattenDelimiter = autoGsonAnnotation.flattenDelimiter().value();
         GsonFieldValidationType gsonFieldValidationType = autoGsonAnnotation.fieldValidationType();
+
+        // We want to translate the Gson Path 'GsonPathFieldNamingPolicy' enum into the standard Gson version.
+        FieldNamingPolicy gsonFieldNamingPolicy = null;
+        GsonPathFieldNamingPolicy gsonPathFieldNamingPolicy = autoGsonAnnotation.fieldNamingPolicy();
+        if (gsonPathFieldNamingPolicy != null) {
+            switch (gsonPathFieldNamingPolicy) {
+                case IDENTITY:
+                case IDENTITY_OR_INHERIT_DEFAULT_IF_AVAILABLE:
+                    gsonFieldNamingPolicy = FieldNamingPolicy.IDENTITY;
+                    break;
+
+                case LOWER_CASE_WITH_DASHES:
+                    gsonFieldNamingPolicy = FieldNamingPolicy.LOWER_CASE_WITH_DASHES;
+                    break;
+
+                case LOWER_CASE_WITH_UNDERSCORES:
+                    gsonFieldNamingPolicy = FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES;
+                    break;
+
+                case UPPER_CAMEL_CASE:
+                    gsonFieldNamingPolicy = FieldNamingPolicy.UPPER_CAMEL_CASE;
+                    break;
+
+                case UPPER_CAMEL_CASE_WITH_SPACES:
+                    gsonFieldNamingPolicy = FieldNamingPolicy.UPPER_CAMEL_CASE_WITH_SPACES;
+                    break;
+            }
+        }
+
+        // Annotation processors seem to make obtaining this value difficult!
+        TypeMirror defaultsTypeMirror = null;
+
+        try {
+            autoGsonAnnotation.defaultConfiguration();
+        } catch (MirroredTypeException mte) {
+            defaultsTypeMirror = mte.getTypeMirror();
+        }
+
+        Element defaultsElement = processingEnv.getTypeUtils().asElement(defaultsTypeMirror);
+
+        if (defaultsElement != null) {
+            // If an inheritable annotation is used, used the default instead.
+            GsonPathDefaultConfiguration defaultsAnnotation = defaultsElement.getAnnotation(GsonPathDefaultConfiguration.class);
+
+            if (defaultsAnnotation == null) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Defaults property must point to a class which uses the @GsonPathDefaultConfiguration annotation");
+                throw new ProcessingException();
+            }
+
+            // Inherit 'ignoreNonAnnotatedFields'
+            if (autoGsonAnnotation.ignoreNonAnnotatedFields().inheritDefaultIfAvailable) {
+                fieldsRequireAnnotation = defaultsAnnotation.ignoreNonAnnotatedFields();
+            }
+
+            // Inherit 'serializeNulls'
+            if (autoGsonAnnotation.serializeNulls().inheritDefaultIfAvailable) {
+                serializeNulls = defaultsAnnotation.serializeNulls();
+            }
+
+            // Inherit 'flattenDelimiter'
+            if (autoGsonAnnotation.flattenDelimiter().inheritDefaultIfAvailable()) {
+                flattenDelimiter = defaultsAnnotation.flattenDelimiter();
+            }
+
+            // Inherit 'fieldNamingPolicy'
+            if (autoGsonAnnotation.fieldNamingPolicy().equals(GsonPathFieldNamingPolicy.IDENTITY_OR_INHERIT_DEFAULT_IF_AVAILABLE)) {
+                gsonFieldNamingPolicy = defaultsAnnotation.fieldNamingPolicy();
+            }
+
+            // Inherit 'fieldValidationType'
+            if (gsonFieldValidationType.equals(GsonFieldValidationType.NO_VALIDATION_OR_INHERIT_DEFAULT_IF_AVAILABLE)) {
+                gsonFieldValidationType = defaultsAnnotation.fieldValidationType();
+            }
+        }
 
         List<Element> fieldElements = new ArrayList<>();
         for (Element child : ProcessorUtil.getAllFieldElements(element, processingEnv.getElementUtils(), processingEnv.getTypeUtils())) {
@@ -110,7 +186,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             } else {
                 // Since the serialized annotation wasn't specified, we need to apply the naming policy instead.
-                jsonObjectName = applyFieldNamingPolicy(fieldNamingPolicy, fieldName);
+                jsonObjectName = applyFieldNamingPolicy(gsonFieldNamingPolicy, fieldName);
             }
 
             boolean isMandatory = false;

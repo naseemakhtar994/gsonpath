@@ -2,8 +2,9 @@ package adapter.auto.delimiter.multiple;
 
 import gsonpath.AutoGsonAdapter;
 import com.google.gson.annotations.SerializedName;
+import gsonpath.FlattenDelimiter;
 
-@AutoGsonAdapter(flattenDelimiter = '$')
+@AutoGsonAdapter(flattenDelimiter = @FlattenDelimiter('$'))
 public class TestMultipleDelimiters {
     @SerializedName("Json1$Nest1")
     public int value1;
