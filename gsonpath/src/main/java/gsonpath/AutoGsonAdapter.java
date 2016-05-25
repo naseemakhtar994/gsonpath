@@ -110,5 +110,5 @@ public @interface AutoGsonAdapter {
 
     boolean serializeNulls() default false;
 
-    FieldPolicy fieldPolicy() default FieldPolicy.NEVER_FAIL;
+    GsonFieldValidationType fieldValidationType() default GsonFieldValidationType.NO_VALIDATION;
 }
