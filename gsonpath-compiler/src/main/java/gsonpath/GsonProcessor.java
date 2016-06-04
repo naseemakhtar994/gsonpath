@@ -44,7 +44,7 @@ public class GsonProcessor extends AbstractProcessor {
             try {
                 autoGsonAdapterResults.add(adapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
-                printError("Error while generating TypeAdapter", element);
+                printError(e.getMessage(), e.getElement() != null ? e.getElement() : element);
                 return false;
             }
 
@@ -68,7 +68,7 @@ public class GsonProcessor extends AbstractProcessor {
             try {
                 AutoGsonArrayStreamerResults.add(arrayAdapterGenerator.handle((TypeElement) element));
             } catch (ProcessingException e) {
-                printError("Error while generating StreamAdapter", element);
+                printError(e.getMessage(), e.getElement() != null ? e.getElement() : element);
                 return false;
             }
 

@@ -13,7 +13,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.List;
 
@@ -23,52 +22,51 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         super(processingEnv);
     }
 
-    public HandleResult handle(TypeElement element) throws ProcessingException {
+    public HandleResult handle(TypeElement streamerElement) throws ProcessingException {
         // The class must implement the GsonArrayStreamer interface!
+        ClassName streamerClassName = ClassName.get(streamerElement);
+        ClassName outputClassName = ClassName.get(streamerClassName.packageName(), generateClassName(streamerClassName));
 
-        TypeMirror GsonArrayStreamerElement = null;
-        for (TypeMirror typeMirror : element.getInterfaces()) {
+        TypeMirror gsonArrayStreamerElement = null;
+        for (TypeMirror typeMirror : streamerElement.getInterfaces()) {
             TypeElement interfaceElement = (TypeElement) processingEnv.getTypeUtils().asElement(typeMirror);
 
-            if (ProcessorUtil.getElementJavaPoetClassName(interfaceElement).equals(ClassName.get(GsonArrayStreamer.class))) {
-                GsonArrayStreamerElement = typeMirror;
+            if (ClassName.get(interfaceElement).equals(ClassName.get(GsonArrayStreamer.class))) {
+                gsonArrayStreamerElement = typeMirror;
             }
         }
 
-        if (GsonArrayStreamerElement == null) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class must extend " + GsonArrayStreamer.class.getName());
-            throw new ProcessingException();
+        if (gsonArrayStreamerElement == null) {
+            throw new ProcessingException("Class must extend " + GsonArrayStreamer.class.getName());
         }
 
         // Get the actual argument used for json parsing from the interface generics.
-        List<TypeMirror> typeGenericArguments = ProcessorUtil.getTypeGenericArguments(GsonArrayStreamerElement);
-        TypeMirror typeMirror = typeGenericArguments.get(0);
+        ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) TypeName.get(gsonArrayStreamerElement);
 
-        final ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(processingEnv.getTypeUtils().asElement(typeMirror));
-        ClassName originalAdapterInterface = ProcessorUtil.getElementJavaPoetClassName(element);
+        final TypeName gsonModelClassName = parameterizedTypeName.typeArguments.get(0);
+        ClassName originalAdapterInterface = ClassName.get(streamerElement);
 
-        String adapterClassName = getClassName(element);
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(adapterClassName)
+        TypeSpec.Builder streamerTypeBuilder = TypeSpec.classBuilder(outputClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .superclass(ParameterizedTypeName.get(ClassName.get(AbstractGsonArrayStreamer.class), elementClassName))
+                .superclass(ParameterizedTypeName.get(ClassName.get(AbstractGsonArrayStreamer.class), gsonModelClassName))
                 .addSuperinterface(originalAdapterInterface);
 
-        AutoGsonArrayStreamer autoGsonArrayAnnotation = element.getAnnotation(AutoGsonArrayStreamer.class);
+        AutoGsonArrayStreamer autoGsonArrayAnnotation = streamerElement.getAnnotation(AutoGsonArrayStreamer.class);
         String rootField = autoGsonArrayAnnotation.rootField();
         char flattenDelimiter = autoGsonArrayAnnotation.flattenDelimiter();
 
-        boolean isRootFieldSpecified = (rootField != null && rootField.length() > 0);
+        boolean isRootFieldSpecified = rootField.length() > 0;
 
         // This flag is only valid if the rootField value is populated, since it only affects the behaviour of rootField.
         final boolean consumeReaderFully = autoGsonArrayAnnotation.consumeReaderFully() && isRootFieldSpecified;
 
         GsonFieldTree rootElements = new GsonFieldTree();
         if (isRootFieldSpecified) {
-            getElementsFromRoot(rootElements, rootField, flattenDelimiter);
+            createGsonTreeFromRootField(rootElements, rootField, flattenDelimiter);
         }
 
         // getArray
-        ArrayTypeName elementArrayType = ArrayTypeName.of(elementClassName);
+        ArrayTypeName elementArrayType = ArrayTypeName.of(gsonModelClassName);
         MethodSpec.Builder getArrayJsonReader = createBasicBuilder("getArray", elementArrayType);
 
         final CodeBlock.Builder getArrayBlock = CodeBlock.builder();
@@ -100,11 +98,11 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
                 public void onNodeEmpty() {
                     if (consumeReaderFully) {
                         // Since we read the json entirely, we cannot return here.
-                        getArrayBlock.addStatement("result = gson.fromJson(in, $T[].class)", elementClassName);
+                        getArrayBlock.addStatement("result = gson.fromJson(in, $T[].class)", gsonModelClassName);
                         getArrayBlock.addStatement("break");
 
                     } else {
-                        getArrayBlock.addStatement("return gson.fromJson(in, $T[].class)", elementClassName);
+                        getArrayBlock.addStatement("return gson.fromJson(in, $T[].class)", gsonModelClassName);
                     }
                 }
             });
@@ -120,17 +118,17 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
             // There is no custom root field specified, therefore this is the root field.
             if (consumeReaderFully) {
                 // Since we read the json entirely, we cannot return here.
-                getArrayBlock.addStatement("result = gson.fromJson(in, $T[].class)", elementClassName);
+                getArrayBlock.addStatement("result = gson.fromJson(in, $T[].class)", gsonModelClassName);
 
             } else {
-                getArrayBlock.addStatement("return gson.fromJson(in, $T[].class)", elementClassName);
+                getArrayBlock.addStatement("return gson.fromJson(in, $T[].class)", gsonModelClassName);
             }
         }
         getArrayJsonReader.addCode(getArrayBlock.build());
-        typeBuilder.addMethod(getArrayJsonReader.build());
+        streamerTypeBuilder.addMethod(getArrayJsonReader.build());
 
         // getList
-        ParameterizedTypeName elementListType = ParameterizedTypeName.get(ClassName.get(List.class), elementClassName);
+        ParameterizedTypeName elementListType = ParameterizedTypeName.get(ClassName.get(List.class), gsonModelClassName);
         MethodSpec.Builder getListJsonReader = createBasicBuilder("getList", elementListType);
 
         final CodeBlock.Builder getListBlock = CodeBlock.builder();
@@ -162,11 +160,11 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
                 public void onNodeEmpty() {
                     if (consumeReaderFully) {
                         // Sine we read the json entirely, we cannot return here.
-                        getListBlock.addStatement("result = gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+                        getListBlock.addStatement("result = gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", gsonModelClassName);
                         getListBlock.addStatement("break");
 
                     } else {
-                        getListBlock.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+                        getListBlock.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", gsonModelClassName);
                     }
                 }
             });
@@ -182,14 +180,14 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
             // There is no custom root field specified, therefore this is the root field.
             if (consumeReaderFully) {
                 // Sine we read the json entirely, we cannot return here.
-                getListBlock.addStatement("result = gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+                getListBlock.addStatement("result = gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", gsonModelClassName);
 
             } else {
-                getListBlock.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", elementClassName);
+                getListBlock.addStatement("return gson.fromJson(in, new com.google.gson.reflect.TypeToken<List<$T>>() {}.getType())", gsonModelClassName);
             }
         }
         getListJsonReader.addCode(getListBlock.build());
-        typeBuilder.addMethod(getListJsonReader.build());
+        streamerTypeBuilder.addMethod(getListJsonReader.build());
 
         // Stream results, multiple - json reader.
         MethodSpec.Builder streamMultipleJsonReader = createBasicBuilder("streamArraySegmented", null);
@@ -197,7 +195,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         streamMultipleJsonReader.addParameter(ParameterizedTypeName.get(ClassName.get(GsonArrayStreamer.StreamCallback.class), elementArrayType), "callback");
 
         final CodeBlock.Builder streamCodeBlock = CodeBlock.builder();
-        streamCodeBlock.addStatement("$T[] results", elementClassName);
+        streamCodeBlock.addStatement("$T[] results", gsonModelClassName);
         streamCodeBlock.addStatement("StreamCallback.StreamHandler callbackResponse");
         streamCodeBlock.addStatement("int resultIndex");
         streamCodeBlock.add("\n");
@@ -212,7 +210,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
                 @Override
                 public void onInitialise() {
-                    addStreamInitializerToCodeBlock(streamCodeBlock, elementClassName);
+                    addStreamInitializerToCodeBlock(streamCodeBlock, gsonModelClassName);
                 }
 
                 @Override
@@ -222,7 +220,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
 
                 @Override
                 public void onNodeEmpty() {
-                    addStreamCodeBlock(streamCodeBlock, elementClassName);
+                    addStreamCodeBlock(streamCodeBlock, gsonModelClassName);
                 }
             });
         } else {
@@ -236,8 +234,8 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
             streamCodeBlock.endControlFlow();
             streamCodeBlock.add("\n");
 
-            addStreamInitializerToCodeBlock(streamCodeBlock, elementClassName);
-            addStreamCodeBlock(streamCodeBlock, elementClassName);
+            addStreamInitializerToCodeBlock(streamCodeBlock, gsonModelClassName);
+            addStreamCodeBlock(streamCodeBlock, gsonModelClassName);
 
             streamCodeBlock.nextControlFlow("catch ($T e)", ClassName.get(IOException.class));
             streamCodeBlock.addStatement("throw new $T(e)", ClassName.get(JsonSyntaxException.class));
@@ -256,16 +254,15 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         streamCodeBlock.endControlFlow();
 
         streamMultipleJsonReader.addCode(streamCodeBlock.build());
-        typeBuilder.addMethod(streamMultipleJsonReader.build());
+        streamerTypeBuilder.addMethod(streamMultipleJsonReader.build());
 
-        String elementPackagePath = ProcessorUtil.getElementPackage(element);
-        if (writeFile(elementPackagePath, typeBuilder)) {
-            return new HandleResult(originalAdapterInterface, ClassName.get(elementPackagePath, adapterClassName));
+        if (writeFile(outputClassName.packageName(), streamerTypeBuilder)) {
+            return new HandleResult(originalAdapterInterface, outputClassName);
         }
-        throw new ProcessingException();
+        throw new ProcessingException("Failed to write generated file: " + outputClassName.simpleName());
     }
 
-    private void addStreamCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
+    private void addStreamCodeBlock(CodeBlock.Builder builder, TypeName elementClassName) {
         builder.addStatement("in.beginArray()");
         builder.beginControlFlow("while (in.hasNext())");
         builder.addStatement("results[++resultIndex] = gson.fromJson(in, $T.class)", elementClassName);
@@ -298,7 +295,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         builder.endControlFlow();
     }
 
-    private void addStreamInitializerToCodeBlock(CodeBlock.Builder builder, ClassName elementClassName) {
+    private void addStreamInitializerToCodeBlock(CodeBlock.Builder builder, TypeName elementClassName) {
         builder.addStatement("results = new $T[streamSize]", elementClassName);
         builder.addStatement("callbackResponse = new StreamCallback.StreamHandler()");
         builder.addStatement("resultIndex = -1");

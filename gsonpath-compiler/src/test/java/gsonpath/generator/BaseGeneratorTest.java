@@ -16,7 +16,7 @@ import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 
 public abstract class BaseGeneratorTest {
 
-    public void assertGeneratedContent(TestCriteria criteria) {
+    protected void assertGeneratedContent(TestCriteria criteria) {
         ProcessedCompileTesterFactory testerFactory;
 
         // Add all the required 'source' files.
@@ -88,15 +88,15 @@ public abstract class BaseGeneratorTest {
             return this;
         }
 
-        public int getSourceFilesSize() {
+        int getSourceFilesSize() {
             return relativeSourceNames.size() + absoluteSourceNames.size();
         }
 
-        public int getGeneratedFilesSize() {
+        int getGeneratedFilesSize() {
             return relativeGeneratedNames.size() + absoluteGeneratedNames.size();
         }
 
-        public JavaFileObject getSourceFileObject(int index) {
+        JavaFileObject getSourceFileObject(int index) {
             int relativeSize = relativeSourceNames.size();
             if (index < relativeSize) {
                 return JavaFileObjects.forResource(resourcePath + "/" + relativeSourceNames.get(index));
@@ -104,7 +104,7 @@ public abstract class BaseGeneratorTest {
             return JavaFileObjects.forResource(absoluteSourceNames.get(index - relativeSize));
         }
 
-        public JavaFileObject getGeneratedFileObject(int index) {
+        JavaFileObject getGeneratedFileObject(int index) {
             int relativeSize = relativeGeneratedNames.size();
             if (index < relativeSize) {
                 return JavaFileObjects.forResource(resourcePath + "/" + relativeGeneratedNames.get(index));

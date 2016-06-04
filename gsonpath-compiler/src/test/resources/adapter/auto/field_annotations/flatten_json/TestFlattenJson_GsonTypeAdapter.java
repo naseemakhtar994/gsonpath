@@ -3,6 +3,7 @@ package adapter.auto.field_annotations.flatten_json;
 import static gsonpath.GsonUtil.*;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
@@ -40,7 +41,7 @@ public final class TestFlattenJson_GsonTypeAdapter extends TypeAdapter<TestFlatt
                 case "value1":
                     jsonFieldCounter0++;
 
-                    com.google.gson.JsonElement safeValue0 = mGson.getAdapter(com.google.gson.JsonElement.class).read(in);
+                    JsonElement safeValue0 = mGson.getAdapter(JsonElement.class).read(in);
                     if (safeValue0 != null) {
                         result.value1 = safeValue0.toString();
                     }

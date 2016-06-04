@@ -1,84 +1,76 @@
 package gsonpath.generator;
 
+import com.google.gson.JsonElement;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import gsonpath.FlattenJson;
 import gsonpath.ProcessingException;
-import gsonpath.ProcessorUtil;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.TypeElement;
 import java.util.*;
 import java.util.regex.Pattern;
 
 public abstract class BaseAdapterGenerator extends Generator {
-    protected static final String GSON_PACKAGE = "com.google.gson";
-    protected static final String STRING_CLASS_PATH = "java.lang.String";
-
-    protected static final Set<String> HANDLED_PRIMITIVES = new HashSet<>(Arrays.asList(
-            "boolean", "int", "long", "double"
+    private static final Set<TypeName> GSON_SUPPORTED_PRIMITIVE = new HashSet<>(Arrays.asList(
+            TypeName.BOOLEAN,
+            TypeName.INT,
+            TypeName.LONG,
+            TypeName.DOUBLE
     ));
 
-    protected static final Set<String> HANDLED_BOXED_PRIMITIVES = new HashSet<>(Arrays.asList(
-            "java.lang.Boolean", "java.lang.Integer", "java.lang.Long", "java.lang.Double"
+    protected static final Set<TypeName> GSON_SUPPORTED_CLASSES = new HashSet<>(Arrays.asList(
+            TypeName.get(Boolean.class),
+            TypeName.get(Integer.class),
+            TypeName.get(Long.class),
+            TypeName.get(Double.class),
+            TypeName.get(String.class)
     ));
 
-    protected static final Map<String, String> PRIMITIVE_TO_WRAPPER_MAP = new HashMap<>();
-
-    static {
-        PRIMITIVE_TO_WRAPPER_MAP.put("boolean", "java.lang.Boolean");
-        PRIMITIVE_TO_WRAPPER_MAP.put("int", "java.lang.Integer");
-        PRIMITIVE_TO_WRAPPER_MAP.put("long", "java.lang.Long");
-        PRIMITIVE_TO_WRAPPER_MAP.put("double", "java.lang.Double");
-    }
+    protected static final ClassName CLASS_NAME_STRING = ClassName.get(String.class);
+    private static final ClassName CLASS_NAME_JSON_ELEMENT = ClassName.get(JsonElement.class);
 
     // Used to avoid naming conflicts.
     protected int mCounterVariableCount;
     protected int mSafeVariableCount;
 
-    public BaseAdapterGenerator(ProcessingEnvironment processingEnv) {
+    protected BaseAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
 
-    protected GsonFieldTree getElementsFromRoot(GsonFieldTree rootFieldTree, String rootField, char delimiter) {
-        if (rootField.length() > 0) {
-            // Ensure that the delimiter is correctly escaped before attempting to split the string.
-            String regexSafeDelimiter = Pattern.quote(String.valueOf(delimiter));
-            String[] split = rootField.split(regexSafeDelimiter);
-
-            if (split.length > 0) {
-                // Keep adding branches to the tree and switching our root to the new branch.
-                for (String field : split) {
-                    GsonFieldTree currentTree = new GsonFieldTree();
-                    rootFieldTree.addTreeBranch(field, currentTree);
-                    rootFieldTree = currentTree;
-                }
-
-                return rootFieldTree;
-
-            } else {
-                // Add a single branch to the tree and return the new branch.
-                GsonFieldTree mapWithRoot = new GsonFieldTree();
-                rootFieldTree.addTreeBranch(rootField, mapWithRoot);
-                return mapWithRoot;
-            }
+    protected GsonFieldTree createGsonTreeFromRootField(GsonFieldTree rootFieldTree, String rootField, char delimiter) {
+        if (rootField.length() == 0) {
+            return rootFieldTree;
         }
 
-        return rootFieldTree;
+        // Ensure that the delimiter is correctly escaped before attempting to split the string.
+        String regexSafeDelimiter = Pattern.quote(String.valueOf(delimiter));
+        String[] split = rootField.split(regexSafeDelimiter);
+
+        if (split.length > 0) {
+            // Keep adding branches to the tree and switching our root to the new branch.
+            for (String field : split) {
+                GsonFieldTree currentTree = new GsonFieldTree();
+                rootFieldTree.addTreeBranch(field, currentTree);
+                rootFieldTree = currentTree;
+            }
+
+            return rootFieldTree;
+
+        } else {
+            // Add a single branch to the tree and return the new branch.
+            GsonFieldTree mapWithRoot = new GsonFieldTree();
+            rootFieldTree.addTreeBranch(rootField, mapWithRoot);
+            return mapWithRoot;
+        }
     }
 
-    public interface ObjectParserCallback {
-        void onInitialObjectNull();
+    protected void createObjectParser(int fieldDepth,
+                                      CodeBlock.Builder codeBlock,
+                                      GsonFieldTree jsonMapping,
+                                      ObjectParserCallback callback) throws ProcessingException {
 
-        void onInitialise();
-
-        void onFieldAssigned(String fieldName);
-
-        void onNodeEmpty();
-    }
-
-    protected void createObjectParser(int fieldDepth, CodeBlock.Builder codeBlock, GsonFieldTree jsonMapping, ObjectParserCallback callback) throws ProcessingException {
         String counterVariableName = "jsonFieldCounter" + mCounterVariableCount;
         mCounterVariableCount++;
 
@@ -138,73 +130,80 @@ public abstract class BaseAdapterGenerator extends Generator {
             Object value = jsonMapping.get(key);
             if (value instanceof FieldInfo) {
                 FieldInfo fieldInfo = (FieldInfo) value;
-                Element field = fieldInfo.element;
 
                 // Make sure the field's annotations don't have any problems.
-                validateFieldAnnotations(field);
+                validateFieldAnnotations(fieldInfo);
 
-                String gsonMethodType = ProcessorUtil.getElementType(field);
+                TypeName fieldTypeName = fieldInfo.typeName;
 
                 //
                 // Handle the primitive the same way as their wrapper class.
                 // This ensures null safety is handled.
                 //
-                if (HANDLED_PRIMITIVES.contains(gsonMethodType)) {
-                    gsonMethodType = PRIMITIVE_TO_WRAPPER_MAP.get(gsonMethodType);
+                if (GSON_SUPPORTED_PRIMITIVE.contains(fieldTypeName)) {
+                    fieldTypeName = fieldTypeName.box();
                 }
 
                 // Add a new line to improve readability for the multi-lined mapping.
                 codeBlock.add("\n");
 
-                boolean isStringType = gsonMethodType.equals(STRING_CLASS_PATH);
                 boolean callToString = false;
 
-                if (isStringType || HANDLED_BOXED_PRIMITIVES.contains(gsonMethodType)) {
-
-                    gsonMethodType = gsonMethodType.replace("java.lang.", "");
+                if (GSON_SUPPORTED_CLASSES.contains(fieldTypeName)) {
+                    ClassName fieldClassName = (ClassName) fieldTypeName;
 
                     // Special handling for strings.
                     boolean handled = false;
-                    if (isStringType) {
-                        FlattenJson annotation = field.getAnnotation(FlattenJson.class);
+                    if (fieldTypeName.equals(CLASS_NAME_STRING)) {
+                        FlattenJson annotation = fieldInfo.getAnnotation(FlattenJson.class);
                         if (annotation != null) {
                             handled = true;
-                            codeBlock.addStatement("com.google.gson.JsonElement safeValue$L = mGson.getAdapter(com.google.gson.JsonElement.class).read(in)", mSafeVariableCount);
+                            codeBlock.addStatement("$T safeValue$L = mGson.getAdapter($T.class).read(in)",
+                                    CLASS_NAME_JSON_ELEMENT,
+                                    mSafeVariableCount,
+                                    CLASS_NAME_JSON_ELEMENT);
 
                             callToString = true;
                         }
                     }
 
                     if (!handled) {
-                        codeBlock.addStatement("$L safeValue$L = get$LSafely(in)", gsonMethodType, mSafeVariableCount, gsonMethodType);
+                        codeBlock.addStatement("$L safeValue$L = get$LSafely(in)",
+                                fieldClassName.simpleName(),
+                                mSafeVariableCount,
+                                fieldClassName.simpleName());
                     }
                 } else {
                     String adapterName;
 
-                    // TODO: Casting field to 'TypeElement' throws a cast exception, so we need to detect generics in a hacky way at the moment.
-                    boolean isGenericField = gsonMethodType.contains("<");
-                    if (isGenericField) {
+                    if (fieldTypeName instanceof ParameterizedTypeName) {
                         // This is a generic type
-                        adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", gsonMethodType);
+                        adapterName = String.format("new com.google.gson.reflect.TypeToken<%s>(){}", fieldTypeName);
 
                     } else {
-                        adapterName = gsonMethodType + ".class";
+                        adapterName = fieldTypeName + ".class";
                     }
 
                     // Handle every other possible class by falling back onto the gson adapter.
-                    codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)", gsonMethodType, mSafeVariableCount, adapterName);
+                    codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)",
+                            fieldTypeName, mSafeVariableCount, adapterName);
                 }
 
-                String fieldName = field.getSimpleName().toString();
                 codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
-                codeBlock.addStatement("result.$L = safeValue$L$L", fieldName, mSafeVariableCount, callToString ? ".toString()" : "");
+                codeBlock.addStatement("result.$L = safeValue$L$L",
+                        fieldInfo.fieldName,
+                        mSafeVariableCount,
+                        callToString ? ".toString()" : "");
 
                 // Inform the callback in case it wishes to add any further code.
-                callback.onFieldAssigned(fieldName);
+                callback.onFieldAssigned(fieldInfo.fieldName);
 
                 if (fieldInfo.isRequired) {
                     codeBlock.nextControlFlow("else");
-                    codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON element '$L' was null for class '$L'\")", fieldInfo.jsonPath, field.getEnclosingElement());
+                    codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory " +
+                                    "JSON element '$L' was null for class '$L'\")",
+                            fieldInfo.jsonFieldPath,
+                            fieldInfo.className);
                 }
 
                 codeBlock.endControlFlow(); // if
@@ -244,19 +243,17 @@ public abstract class BaseAdapterGenerator extends Generator {
         codeBlock.addStatement("in.endObject()");
     }
 
-    protected void validateFieldAnnotations(Element field) throws ProcessingException {
+    protected void validateFieldAnnotations(FieldInfo fieldInfo) throws ProcessingException {
         // Do nothing.
     }
 
-    protected String getClassName(TypeElement element) {
-        ClassName elementClassName = ProcessorUtil.getElementJavaPoetClassName(element);
-
+    protected String generateClassName(ClassName className) {
         //
         // We need to ensure that nested classes are have include their parent class as part of the name.
         // Otherwise this could cause file name contention when other nested classes have the same name
         //
         String fileName = "";
-        for (String name : elementClassName.simpleNames()) {
+        for (String name : className.simpleNames()) {
             fileName += name + "_";
         }
 
@@ -266,4 +263,13 @@ public abstract class BaseAdapterGenerator extends Generator {
 
     protected abstract String getClassNameSuffix();
 
+    public interface ObjectParserCallback {
+        void onInitialObjectNull();
+
+        void onInitialise();
+
+        void onFieldAssigned(String fieldName);
+
+        void onNodeEmpty();
+    }
 }

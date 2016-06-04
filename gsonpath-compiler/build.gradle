@@ -5,10 +5,10 @@ sourceCompatibility = JavaVersion.VERSION_1_7
 
 dependencies {
     compile project(":gsonpath")
-    compile 'com.squareup:javapoet:1.5.1'
+    compile 'com.squareup:javapoet:1.7.0'
     compile 'com.google.auto.service:auto-service:1.0-rc2'
-    compile 'com.google.auto:auto-common:0.4'
-    compile 'com.google.code.gson:gson:2.6.1'
+    compile 'com.google.auto:auto-common:0.6'
+    compile 'com.google.code.gson:gson:2.6.2'
 
     testCompile 'junit:junit:4.12'
     testCompile 'com.google.truth:truth:0.27'

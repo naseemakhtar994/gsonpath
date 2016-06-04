@@ -9,13 +9,13 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
 
 public abstract class Generator {
-    public final ProcessingEnvironment processingEnv;
+    protected final ProcessingEnvironment processingEnv;
 
-    public Generator(ProcessingEnvironment processingEnv) {
+    protected Generator(ProcessingEnvironment processingEnv) {
         this.processingEnv = processingEnv;
     }
 
-    public boolean writeFile(String packageName, TypeSpec.Builder typeBuilder) {
+    protected boolean writeFile(String packageName, TypeSpec.Builder typeBuilder) {
         try {
             JavaFile.Builder builder = JavaFile.builder(packageName, typeBuilder.build());
             onJavaFileBuilt(builder);
@@ -29,7 +29,7 @@ public abstract class Generator {
         }
     }
 
-    public void onJavaFileBuilt(JavaFile.Builder builder) {
+    protected void onJavaFileBuilt(JavaFile.Builder builder) {
         // Do nothing.
     }
 }

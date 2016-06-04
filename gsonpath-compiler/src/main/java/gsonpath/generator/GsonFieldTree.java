@@ -3,7 +3,7 @@ package gsonpath.generator;
 import java.util.LinkedHashMap;
 
 public class GsonFieldTree {
-    LinkedHashMap<String, Object> fieldMap;
+    private final LinkedHashMap<String, Object> fieldMap;
 
     public GsonFieldTree() {
         fieldMap = new LinkedHashMap<>();
@@ -14,7 +14,7 @@ public class GsonFieldTree {
     }
 
     public void addField(String branchName, FieldInfo field) throws IllegalArgumentException {
-        if (fieldMap.containsKey(branchName)) {
+        if (containsKey(branchName)) {
             throw new IllegalArgumentException("Value already exists");
         }
         fieldMap.put(branchName, field);
@@ -32,4 +32,7 @@ public class GsonFieldTree {
         return fieldMap.get(key);
     }
 
+    public boolean containsKey(String key) {
+        return fieldMap.containsKey(key);
+    }
 }
