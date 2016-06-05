@@ -49,7 +49,7 @@ public abstract class BaseGeneratorTest {
             predicateClause.generatesSources(generatedSources[0]);
 
         } else {
-            predicateClause.generatesSources(generatedSources[0], Arrays.copyOfRange(generatedSources, 1, generatedSources.length - 1));
+            predicateClause.generatesSources(generatedSources[0], Arrays.copyOfRange(generatedSources, 1, generatedSources.length));
         }
     }
 

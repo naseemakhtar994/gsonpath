@@ -100,7 +100,20 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             }
         }
 
-        List<FieldInfo> fieldInfoList = getModelFieldsFromElement(modelElement, fieldsRequireAnnotation);
+        ClassName concreteClassName;
+        List<FieldInfo> fieldInfoList;
+        boolean isModelInterface = modelElement.getKind().isInterface();
+        if (!isModelInterface) {
+            concreteClassName = modelClassName;
+
+            fieldInfoList = getModelFieldsFromElement(modelElement, fieldsRequireAnnotation);
+
+        } else {
+            ModelInterfaceGenerator.InterfaceInfo interfaceInfo = new ModelInterfaceGenerator(processingEnv).handle(modelElement);
+            concreteClassName = interfaceInfo.parentClassName;
+
+            fieldInfoList = getModelFieldsFromInterface(interfaceInfo);
+        }
 
         GsonFieldTree fieldTree = createFieldTree(fieldInfoList, autoGsonAnnotation.rootField(),
                 flattenDelimiter, gsonFieldNamingPolicy, gsonFieldValidationType);
@@ -117,8 +130,14 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                     .build());
         }
 
-        adapterTypeBuilder.addMethod(createReadMethod(modelClassName, mandatoryInfoMap, fieldTree));
-        adapterTypeBuilder.addMethod(createWriteMethod(modelClassName, fieldTree, serializeNulls));
+        adapterTypeBuilder.addMethod(createReadMethod(modelClassName, concreteClassName, mandatoryInfoMap, fieldTree));
+
+        if (!isModelInterface) {
+            adapterTypeBuilder.addMethod(createWriteMethod(modelClassName, fieldTree, serializeNulls));
+
+        } else {
+            adapterTypeBuilder.addMethod(createEmptyWriteMethod(modelClassName));
+        }
 
         if (writeFile(adapterClassName.packageName(), adapterTypeBuilder)) {
             return new HandleResult(modelClassName, adapterClassName);
@@ -192,6 +211,56 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 @Override
                 public Element getElement() {
                     return memberElement;
+                }
+            });
+        }
+        return fieldInfoList;
+    }
+
+    private List<FieldInfo> getModelFieldsFromInterface(final ModelInterfaceGenerator.InterfaceInfo interfaceInfo) {
+        List<FieldInfo> fieldInfoList = new ArrayList<>();
+
+        for (final ModelInterfaceGenerator.InterfaceFieldInfo fieldSpec : interfaceInfo.fieldInfo) {
+
+            fieldInfoList.add(new FieldInfo() {
+                @Override
+                public TypeName getTypeName() {
+                    return fieldSpec.typeName;
+                }
+
+                @Override
+                public String getParentClassName() {
+                    return interfaceInfo.parentClassName.simpleName();
+                }
+
+                @Override
+                public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+                    return fieldSpec.methodElement.getAnnotation(annotationClass);
+                }
+
+                @Override
+                public String getFieldName() {
+                    return fieldSpec.fieldName;
+                }
+
+                @Override
+                public String[] getAnnotationNames() {
+                    List<? extends AnnotationMirror> annotationMirrors = fieldSpec.methodElement.getAnnotationMirrors();
+
+                    String[] annotationNames = new String[annotationMirrors.size()];
+
+                    for (int i = 0; i < annotationMirrors.size(); i++) {
+                        AnnotationMirror annotationMirror = annotationMirrors.get(i);
+                        Element annotationElement = annotationMirror.getAnnotationType().asElement();
+
+                        annotationNames[i] = annotationElement.getSimpleName().toString();
+                    }
+                    return annotationNames;
+                }
+
+                @Override
+                public Element getElement() {
+                    return fieldSpec.methodElement;
                 }
             });
         }
@@ -394,14 +463,15 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     /**
      * public ImageSizes read(JsonReader in) throws IOException {
      */
-    private MethodSpec createReadMethod(final ClassName elementClassName,
+    private MethodSpec createReadMethod(final ClassName baseElement,
+                                        final ClassName concreteElement,
                                         final Map<String, MandatoryFieldInfo> mandatoryInfoMap,
                                         final GsonFieldTree rootElements) throws ProcessingException {
 
         MethodSpec.Builder readMethod = MethodSpec.methodBuilder("read")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(elementClassName)
+                .returns(baseElement)
                 .addParameter(JsonReader.class, "in")
                 .addException(IOException.class);
 
@@ -417,7 +487,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             @Override
             public void onInitialise() {
-                codeBlock.addStatement("$T result = new $T()", elementClassName, elementClassName);
+                codeBlock.addStatement("$T result = new $T()", concreteElement, concreteElement);
 
                 // If we have any mandatory fields, we need to keep track of what has been assigned.
                 if (mandatoryInfoMap.size() > 0) {
@@ -467,7 +537,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             codeBlock.endControlFlow(); // Switch
             codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON " +
-                    "element '\" + fieldName + \"' was not found for class '$L'\")", elementClassName);
+                    "element '\" + fieldName + \"' was not found for class '$L'\")", baseElement);
             codeBlock.endControlFlow(); // If
             codeBlock.endControlFlow(); // For
         }
@@ -476,6 +546,17 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         readMethod.addCode(codeBlock.build());
 
         return readMethod.build();
+    }
+
+    private MethodSpec createEmptyWriteMethod(ClassName elementClassName) throws ProcessingException {
+        MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(JsonWriter.class, "out")
+                .addParameter(elementClassName, "value")
+                .addException(IOException.class);
+
+        return writeMethod.build();
     }
 
     /**
@@ -526,10 +607,6 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 // Make sure the field's annotations don't have any problems.
                 validateFieldAnnotations(fieldInfo);
 
-                //
-                // Handle the primitive the same way as their wrapper class.
-                // This ensures null safety is handled.
-                //
                 TypeName fieldTypeName = fieldInfo.getTypeName();
                 boolean isPrimitive = fieldTypeName.isPrimitive();
 
