@@ -14,7 +14,8 @@ import java.lang.Override;
 public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapter<TestValidateExplicitNonNull> {
     private static final int MANDATORY_INDEX_MANDATORY1 = 0;
     private static final int MANDATORY_INDEX_MANDATORY2 = 1;
-    private static final int MANDATORY_FIELDS_SIZE = 2;
+    private static final int MANDATORY_INDEX_MANDATORY3 = 2;
+    private static final int MANDATORY_FIELDS_SIZE = 3;
 
     private final Gson mGson;
 
@@ -36,7 +37,7 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
         in.beginObject();
 
         while (in.hasNext()) {
-            if (jsonFieldCounter0 == 3) {
+            if (jsonFieldCounter0 == 4) {
                 in.skipValue();
                 continue;
             }
@@ -66,12 +67,24 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
                     }
                     break;
 
-                case "optional1":
+                case "mandatory3":
                     jsonFieldCounter0++;
 
                     Integer safeValue2 = getIntegerSafely(in);
                     if (safeValue2 != null) {
-                        result.optional1 = safeValue2;
+                        result.mandatory3 = safeValue2;
+                        mandatoryFieldsCheckList[MANDATORY_INDEX_MANDATORY3] = true;
+                    } else {
+                        throw new gsonpath.JsonFieldMissingException("Mandatory JSON element 'mandatory3' was null for class 'adapter.auto.field_policy.validate_explicit_non_null.TestValidateExplicitNonNull'");
+                    }
+                    break;
+
+                case "optional1":
+                    jsonFieldCounter0++;
+
+                    Integer safeValue3 = getIntegerSafely(in);
+                    if (safeValue3 != null) {
+                        result.optional1 = safeValue3;
                     }
                     break;
 
@@ -98,6 +111,10 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
 
                     case MANDATORY_INDEX_MANDATORY2:
                         fieldName = "mandatory2";
+                        break;
+
+                    case MANDATORY_INDEX_MANDATORY3:
+                        fieldName = "mandatory3";
                         break;
                 }
                 throw new gsonpath.JsonFieldMissingException("Mandatory JSON element '" + fieldName + "' was not found for class 'adapter.auto.field_policy.validate_explicit_non_null.TestValidateExplicitNonNull'");
@@ -128,10 +145,14 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
             out.value(obj1);
         }
 
-        Integer obj2 = value.optional1;
-        if (obj2 != null) {
+        int obj2 = value.mandatory3;
+        out.name("mandatory3");
+        out.value(obj2);
+
+        Integer obj3 = value.optional1;
+        if (obj3 != null) {
             out.name("optional1");
-            out.value(obj2);
+            out.value(obj3);
         }
 
         // End
