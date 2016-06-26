@@ -10,6 +10,7 @@ public class TestValidateExplicitNonNull {
     public Integer mandatory1;
     @NonNull
     public Integer mandatory2;
+    public int mandatory3;
 
     public Integer optional1;
 }

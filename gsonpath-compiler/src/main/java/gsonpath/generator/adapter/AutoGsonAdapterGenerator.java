@@ -216,17 +216,25 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             }
 
             // Primitives should not use either annotation.
-            if (isMandatory || isOptional) {
-                if (field.asType().getKind().isPrimitive()) {
-                    throw new ProcessingException("Primitives should not use NonNull or Nullable annotations", field);
-                }
+            boolean isPrimitive = field.asType().getKind().isPrimitive();
+            if (isPrimitive && (isMandatory || isOptional)) {
+                throw new ProcessingException("Primitives should not use NonNull or Nullable annotations", field);
             }
 
             boolean isRequired = isMandatory;
 
-            // Using this policy everything is mandatory except for optionals.
-            if (gsonFieldValidationType == GsonFieldValidationType.VALIDATE_ALL_EXCEPT_NULLABLE) {
-                isRequired = true;
+            switch (gsonFieldValidationType) {
+                case VALIDATE_ALL_EXCEPT_NULLABLE:
+                    // Using this policy everything is mandatory except for optionals.
+                    isRequired = true;
+                    break;
+
+                case VALIDATE_EXPLICIT_NON_NULL:
+                    // Primitives are treated as non-null implicitly.
+                    if (isPrimitive) {
+                        isRequired = true;
+                    }
+                    break;
             }
 
             // Optionals will never fail regardless of the policy.
