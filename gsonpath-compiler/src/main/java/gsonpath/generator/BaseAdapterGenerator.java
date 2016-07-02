@@ -65,7 +65,8 @@ public abstract class BaseAdapterGenerator extends Generator {
         }
     }
 
-    protected void createObjectParser(int fieldDepth,
+    protected void createObjectParser(boolean modelAlreadyCreated,
+                                      int fieldDepth,
                                       CodeBlock.Builder codeBlock,
                                       GsonFieldTree jsonMapping,
                                       ObjectParserCallback callback) throws ProcessingException {
@@ -139,7 +140,14 @@ public abstract class BaseAdapterGenerator extends Generator {
                 // Add a new line to improve readability for the multi-lined mapping.
                 codeBlock.add("\n");
 
-                String safeVariableName = fieldPathInfo.getSafeVariableName();
+                String variableName = fieldPathInfo.getVariableName();
+                String safeVariableName = variableName;
+
+                boolean defineVariableType = modelAlreadyCreated;
+                if (fieldPathInfo.isRequired && !modelAlreadyCreated) {
+                    safeVariableName += "_safe";
+                    defineVariableType = true;
+                }
 
                 boolean callToString = false;
 
@@ -167,10 +175,16 @@ public abstract class BaseAdapterGenerator extends Generator {
                     }
 
                     if (!handled) {
-                        codeBlock.addStatement("$L $L = get$LSafely(in)",
-                                fieldClassName.simpleName(),
+                        String variableAssignment = String.format("%s = get%sSafely(in)",
                                 safeVariableName,
                                 fieldClassName.simpleName());
+
+                        if (defineVariableType) {
+                            codeBlock.addStatement("$L $L", fieldClassName.simpleName(), variableAssignment);
+
+                        } else {
+                            codeBlock.addStatement(variableAssignment);
+                        }
                     }
                 } else {
                     String adapterName;
@@ -184,28 +198,47 @@ public abstract class BaseAdapterGenerator extends Generator {
                     }
 
                     // Handle every other possible class by falling back onto the gson adapter.
-                    codeBlock.addStatement("$L $L = mGson.getAdapter($L).read(in)",
-                            fieldTypeName, safeVariableName, adapterName);
+                    String variableAssignment = String.format("%s = mGson.getAdapter(%s).read(in)",
+                            safeVariableName,
+                            adapterName);
+
+                    if (defineVariableType) {
+                        codeBlock.addStatement("$L $L", fieldTypeName, variableAssignment);
+
+                    } else {
+                        codeBlock.addStatement(variableAssignment);
+                    }
                 }
 
-                codeBlock.beginControlFlow("if ($L != null)", safeVariableName);
-                codeBlock.addStatement("result.$L = $L$L",
-                        fieldInfo.getFieldName(),
-                        safeVariableName,
-                        callToString ? ".toString()" : "");
+                if (defineVariableType) {
+                    String fieldName = fieldInfo.getFieldName();
+                    codeBlock.beginControlFlow("if ($L != null)", safeVariableName);
 
-                // Inform the callback in case it wishes to add any further code.
-                callback.onFieldAssigned(fieldInfo.getFieldName());
+                    String assignmentBlock;
+                    if (modelAlreadyCreated) {
+                        assignmentBlock = "result." + fieldName;
+                    } else {
+                        assignmentBlock = variableName;
+                    }
 
-                if (fieldPathInfo.isRequired) {
-                    codeBlock.nextControlFlow("else");
-                    codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory " +
-                                    "JSON element '$L' was null for class '$L'\")",
-                            fieldPathInfo.jsonPath,
-                            fieldInfo.getParentClassName());
+                    codeBlock.addStatement("$L = $L$L",
+                            assignmentBlock,
+                            safeVariableName,
+                            callToString ? ".toString()" : "");
+
+                    // Inform the callback in case it wishes to add any further code.
+                    callback.onFieldAssigned(fieldName);
+
+                    if (fieldPathInfo.isRequired) {
+                        codeBlock.nextControlFlow("else");
+                        codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory " +
+                                        "JSON element '$L' was null for class '$L'\")",
+                                fieldPathInfo.jsonPath,
+                                fieldInfo.getParentClassName());
+                    }
+
+                    codeBlock.endControlFlow(); // if
                 }
-
-                codeBlock.endControlFlow(); // if
 
             } else {
                 GsonFieldTree nextLevelMap = (GsonFieldTree) value;
@@ -213,7 +246,11 @@ public abstract class BaseAdapterGenerator extends Generator {
                     callback.onNodeEmpty();
                     addBreak = false;
                 } else {
-                    createObjectParser(fieldDepth + 1, codeBlock, nextLevelMap, callback);
+                    createObjectParser(modelAlreadyCreated,
+                            fieldDepth + 1,
+                            codeBlock,
+                            nextLevelMap,
+                            callback);
                 }
             }
 

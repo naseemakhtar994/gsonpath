@@ -5,10 +5,18 @@ import org.junit.Test;
 
 public class InterfaceTest extends BaseGeneratorTest {
     @Test
-    public void testInterface() {
-        assertGeneratedContent(new BaseGeneratorTest.TestCriteria("adapter/auto/interface_example")
-                .addRelativeSource("TestInterface.java")
-                .addRelativeGenerated("TestInterface_GsonPathModel.java")
-                .addRelativeGenerated("TestInterface_GsonTypeAdapter.java"));
+    public void testValidInterface() {
+        assertGeneratedContent(new BaseGeneratorTest.TestCriteria("adapter/auto/interface_example/valid")
+                .addRelativeSource("TestValidInterface.java")
+                .addRelativeGenerated("TestValidInterface_GsonPathModel.java")
+                .addRelativeGenerated("TestValidInterface_GsonTypeAdapter.java"));
+    }
+
+    @Test
+    public void testUsingPrimitives() {
+        assertGeneratedContent(new BaseGeneratorTest.TestCriteria("adapter/auto/interface_example/primitive")
+                .addRelativeSource("TestUsingPrimitives.java")
+                .addRelativeGenerated("TestUsingPrimitives_GsonPathModel.java")
+                .addRelativeGenerated("TestUsingPrimitives_GsonTypeAdapter.java"));
     }
 }

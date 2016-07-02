@@ -11,7 +11,7 @@ public class FieldPathInfo {
         this.isRequired = isRequired;
     }
 
-    public String getSafeVariableName() {
+    public String getVariableName() {
         return "value_" + jsonPath.replaceAll("[^A-Za-z0-9_]", "_");
     }
 }

@@ -36,6 +36,9 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addSuperinterface(modelClassName);
 
+        MethodSpec.Builder constructorBuilder = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC);
+
         List<InterfaceFieldInfo> interfaceInfoList = new ArrayList<>();
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (enclosedElement.getKind() == ElementKind.METHOD) {
@@ -52,7 +55,7 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
                 // Transform the method name into the field name by removing the first camel-cased portion.
                 String fieldName = methodName;
 
-                for (int i = fieldName.length() - 1; i >= 0; i--) {
+                for (int i = 0; i < fieldName.length() - 1; i++) {
                     char character = fieldName.charAt(i);
                     if (Character.isUpperCase(character)) {
                         fieldName = Character.toLowerCase(character) + fieldName.substring(i + 1);
@@ -60,7 +63,7 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
                     }
                 }
 
-                typeBuilder.addField(typeName, fieldName);
+                typeBuilder.addField(typeName, fieldName, Modifier.PRIVATE, Modifier.FINAL);
 
                 MethodSpec.Builder accessorMethod = MethodSpec.methodBuilder(methodName)
                         .addAnnotation(Override.class)
@@ -71,9 +74,15 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
 
                 typeBuilder.addMethod(accessorMethod.build());
 
+                // Add the parameter to the constructor
+                constructorBuilder.addParameter(typeName, fieldName);
+                constructorBuilder.addStatement("this.$L = $L", fieldName, fieldName);
+
                 interfaceInfoList.add(new InterfaceFieldInfo(enclosedElement, typeName, fieldName));
             }
         }
+
+        typeBuilder.addMethod(constructorBuilder.build());
 
         if (!writeFile(outputClassName.packageName(), typeBuilder)) {
             throw new ProcessingException("Failed to write generated file: " + outputClassName.simpleName());

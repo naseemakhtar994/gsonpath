@@ -1,4 +1,4 @@
-package adapter.auto.interface_example;
+package adapter.auto.interface_example.valid;
 
 import static gsonpath.GsonUtil.*;
 
@@ -10,27 +10,28 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.lang.Override;
 
-public final class TestInterface_GsonTypeAdapter extends TypeAdapter<TestInterface> {
+public final class TestValidInterface_GsonTypeAdapter extends TypeAdapter<TestValidInterface> {
     private final Gson mGson;
 
-    public TestInterface_GsonTypeAdapter(Gson gson) {
+    public TestValidInterface_GsonTypeAdapter(Gson gson) {
         this.mGson = gson;
     }
 
     @Override
-    public TestInterface read(JsonReader in) throws IOException {
+    public TestValidInterface read(JsonReader in) throws IOException {
 
         // Ensure the object is not null.
         if (!isValidValue(in)) {
             return null;
         }
-        TestInterface_GsonPathModel result = new TestInterface_GsonPathModel();
+        java.lang.Integer value_Json1_Nest1 = null;
+        java.lang.Integer value_value2 = null;
 
         int jsonFieldCounter0 = 0;
         in.beginObject();
 
         while (in.hasNext()) {
-            if (jsonFieldCounter0 == 1) {
+            if (jsonFieldCounter0 == 2) {
                 in.skipValue();
                 continue;
             }
@@ -56,10 +57,7 @@ public final class TestInterface_GsonTypeAdapter extends TypeAdapter<TestInterfa
                             case "Nest1":
                                 jsonFieldCounter1++;
 
-                                Integer value_Json1_Nest1 = getIntegerSafely(in);
-                                if (value_Json1_Nest1 != null) {
-                                    result.value1 = value_Json1_Nest1;
-                                }
+                                value_Json1_Nest1 = getIntegerSafely(in);
                                 break;
 
                             default:
@@ -72,6 +70,12 @@ public final class TestInterface_GsonTypeAdapter extends TypeAdapter<TestInterfa
                     in.endObject();
                     break;
 
+                case "value2":
+                    jsonFieldCounter0++;
+
+                    value_value2 = getIntegerSafely(in);
+                    break;
+
                 default:
                     in.skipValue();
                     break;
@@ -79,10 +83,13 @@ public final class TestInterface_GsonTypeAdapter extends TypeAdapter<TestInterfa
         }
 
         in.endObject();
-        return result;
+        return new TestValidInterface_GsonPathModel(
+                value_Json1_Nest1,
+                value_value2
+        );
     }
 
     @Override
-    public void write(JsonWriter out, TestInterface value) throws IOException {
+    public void write(JsonWriter out, TestValidInterface value) throws IOException {
     }
 }
