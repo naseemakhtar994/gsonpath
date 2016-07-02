@@ -39,9 +39,9 @@ public final class TestNamePolicyUpperCamelCase_GsonTypeAdapter extends TypeAdap
                 case "TestValue":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.testValue = safeValue0;
+                    Integer value_TestValue = getIntegerSafely(in);
+                    if (value_TestValue != null) {
+                        result.testValue = value_TestValue;
                     }
                     break;
 

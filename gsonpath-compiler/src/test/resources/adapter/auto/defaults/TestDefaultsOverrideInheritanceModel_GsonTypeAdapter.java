@@ -58,9 +58,9 @@ public final class TestDefaultsOverrideInheritanceModel_GsonTypeAdapter extends 
                             case "expectedValue":
                                 jsonFieldCounter1++;
 
-                                Integer safeValue0 = getIntegerSafely(in);
-                                if (safeValue0 != null) {
-                                    result.expectedValue = safeValue0;
+                                Integer value_path_expectedValue = getIntegerSafely(in);
+                                if (value_path_expectedValue != null) {
+                                    result.expectedValue = value_path_expectedValue;
                                 }
                                 break;
 
@@ -77,9 +77,9 @@ public final class TestDefaultsOverrideInheritanceModel_GsonTypeAdapter extends 
                 case "notIgnored":
                     jsonFieldCounter0++;
 
-                    String safeValue1 = getStringSafely(in);
-                    if (safeValue1 != null) {
-                        result.notIgnored = safeValue1;
+                    String value_notIgnored = getStringSafely(in);
+                    if (value_notIgnored != null) {
+                        result.notIgnored = value_notIgnored;
                     }
                     break;
 

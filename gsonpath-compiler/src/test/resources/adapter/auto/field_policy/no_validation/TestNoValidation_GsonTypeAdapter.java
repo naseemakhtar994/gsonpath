@@ -40,27 +40,27 @@ public final class TestNoValidation_GsonTypeAdapter extends TypeAdapter<TestNoVa
                 case "optional1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.optional1 = safeValue0;
+                    Integer value_optional1 = getIntegerSafely(in);
+                    if (value_optional1 != null) {
+                        result.optional1 = value_optional1;
                     }
                     break;
 
                 case "optional2":
                     jsonFieldCounter0++;
 
-                    Integer safeValue1 = getIntegerSafely(in);
-                    if (safeValue1 != null) {
-                        result.optional2 = safeValue1;
+                    Integer value_optional2 = getIntegerSafely(in);
+                    if (value_optional2 != null) {
+                        result.optional2 = value_optional2;
                     }
                     break;
 
                 case "optional3":
                     jsonFieldCounter0++;
 
-                    Integer safeValue2 = getIntegerSafely(in);
-                    if (safeValue2 != null) {
-                        result.optional3 = safeValue2;
+                    Integer value_optional3 = getIntegerSafely(in);
+                    if (value_optional3 != null) {
+                        result.optional3 = value_optional3;
                     }
                     break;
 

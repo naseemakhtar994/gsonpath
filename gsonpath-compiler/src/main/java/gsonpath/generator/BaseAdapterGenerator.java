@@ -13,13 +13,6 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public abstract class BaseAdapterGenerator extends Generator {
-    private static final Set<TypeName> GSON_SUPPORTED_PRIMITIVE = new HashSet<>(Arrays.asList(
-            TypeName.BOOLEAN,
-            TypeName.INT,
-            TypeName.LONG,
-            TypeName.DOUBLE
-    ));
-
     protected static final Set<TypeName> GSON_SUPPORTED_CLASSES = new HashSet<>(Arrays.asList(
             TypeName.get(Boolean.class),
             TypeName.get(Integer.class),
@@ -33,7 +26,6 @@ public abstract class BaseAdapterGenerator extends Generator {
 
     // Used to avoid naming conflicts.
     protected int mCounterVariableCount;
-    protected int mSafeVariableCount;
 
     protected BaseAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
@@ -128,29 +120,24 @@ public abstract class BaseAdapterGenerator extends Generator {
             codeBlock.addStatement("$L++", counterVariableName);
 
             Object value = jsonMapping.get(key);
-            if (value instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) value;
+            if (value instanceof FieldPathInfo) {
+                FieldPathInfo fieldPathInfo = (FieldPathInfo) value;
+                FieldInfo fieldInfo = fieldPathInfo.fieldInfo;
 
                 // Make sure the field's annotations don't have any problems.
                 validateFieldAnnotations(fieldInfo);
 
-                TypeName fieldTypeName = fieldInfo.typeName;
-
-                //
-                // Handle the primitive the same way as their wrapper class.
-                // This ensures null safety is handled.
-                //
-                if (GSON_SUPPORTED_PRIMITIVE.contains(fieldTypeName)) {
-                    fieldTypeName = fieldTypeName.box();
-                }
+                TypeName fieldTypeName = fieldInfo.getTypeName();
 
                 // Add a new line to improve readability for the multi-lined mapping.
                 codeBlock.add("\n");
 
+                String safeVariableName = fieldPathInfo.getSafeVariableName();
+
                 boolean callToString = false;
 
-                if (GSON_SUPPORTED_CLASSES.contains(fieldTypeName)) {
-                    ClassName fieldClassName = (ClassName) fieldTypeName;
+                if (GSON_SUPPORTED_CLASSES.contains(fieldTypeName.box())) {
+                    ClassName fieldClassName = (ClassName) fieldTypeName.box();
 
                     // Special handling for strings.
                     boolean handled = false;
@@ -158,9 +145,9 @@ public abstract class BaseAdapterGenerator extends Generator {
                         FlattenJson annotation = fieldInfo.getAnnotation(FlattenJson.class);
                         if (annotation != null) {
                             handled = true;
-                            codeBlock.addStatement("$T safeValue$L = mGson.getAdapter($T.class).read(in)",
+                            codeBlock.addStatement("$T $L = mGson.getAdapter($T.class).read(in)",
                                     CLASS_NAME_JSON_ELEMENT,
-                                    mSafeVariableCount,
+                                    safeVariableName,
                                     CLASS_NAME_JSON_ELEMENT);
 
                             callToString = true;
@@ -168,9 +155,9 @@ public abstract class BaseAdapterGenerator extends Generator {
                     }
 
                     if (!handled) {
-                        codeBlock.addStatement("$L safeValue$L = get$LSafely(in)",
+                        codeBlock.addStatement("$L $L = get$LSafely(in)",
                                 fieldClassName.simpleName(),
-                                mSafeVariableCount,
+                                safeVariableName,
                                 fieldClassName.simpleName());
                     }
                 } else {
@@ -185,30 +172,28 @@ public abstract class BaseAdapterGenerator extends Generator {
                     }
 
                     // Handle every other possible class by falling back onto the gson adapter.
-                    codeBlock.addStatement("$L safeValue$L = mGson.getAdapter($L).read(in)",
-                            fieldTypeName, mSafeVariableCount, adapterName);
+                    codeBlock.addStatement("$L $L = mGson.getAdapter($L).read(in)",
+                            fieldTypeName, safeVariableName, adapterName);
                 }
 
-                codeBlock.beginControlFlow("if (safeValue$L != null)", mSafeVariableCount);
-                codeBlock.addStatement("result.$L = safeValue$L$L",
-                        fieldInfo.fieldName,
-                        mSafeVariableCount,
+                codeBlock.beginControlFlow("if ($L != null)", safeVariableName);
+                codeBlock.addStatement("result.$L = $L$L",
+                        fieldInfo.getFieldName(),
+                        safeVariableName,
                         callToString ? ".toString()" : "");
 
                 // Inform the callback in case it wishes to add any further code.
-                callback.onFieldAssigned(fieldInfo.fieldName);
+                callback.onFieldAssigned(fieldInfo.getFieldName());
 
-                if (fieldInfo.isRequired) {
+                if (fieldPathInfo.isRequired) {
                     codeBlock.nextControlFlow("else");
                     codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory " +
                                     "JSON element '$L' was null for class '$L'\")",
-                            fieldInfo.jsonFieldPath,
-                            fieldInfo.className);
+                            fieldPathInfo.jsonPath,
+                            fieldInfo.getParentClassName());
                 }
 
                 codeBlock.endControlFlow(); // if
-
-                mSafeVariableCount++;
 
             } else {
                 GsonFieldTree nextLevelMap = (GsonFieldTree) value;

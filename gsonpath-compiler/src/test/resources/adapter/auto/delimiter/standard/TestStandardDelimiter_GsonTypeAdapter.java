@@ -56,9 +56,9 @@ public final class TestStandardDelimiter_GsonTypeAdapter extends TypeAdapter<Tes
                             case "Nest1":
                                 jsonFieldCounter1++;
 
-                                Integer safeValue0 = getIntegerSafely(in);
-                                if (safeValue0 != null) {
-                                    result.value1 = safeValue0;
+                                Integer value_Json1_Nest1 = getIntegerSafely(in);
+                                if (value_Json1_Nest1 != null) {
+                                    result.value1 = value_Json1_Nest1;
                                 }
                                 break;
 

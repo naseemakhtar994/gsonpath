@@ -39,9 +39,9 @@ public final class TestNamePolicyLowerCaseDashes_GsonTypeAdapter extends TypeAda
                 case "test-value":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.testValue = safeValue0;
+                    Integer value_test_value = getIntegerSafely(in);
+                    if (value_test_value != null) {
+                        result.testValue = value_test_value;
                     }
                     break;
 

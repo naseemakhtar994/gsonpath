@@ -39,9 +39,9 @@ public final class TestNamePolicyUpperCamelCaseSpaces_GsonTypeAdapter extends Ty
                 case "Test Value":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.testValue = safeValue0;
+                    Integer value_Test_Value = getIntegerSafely(in);
+                    if (value_Test_Value != null) {
+                        result.testValue = value_Test_Value;
                     }
                     break;
 

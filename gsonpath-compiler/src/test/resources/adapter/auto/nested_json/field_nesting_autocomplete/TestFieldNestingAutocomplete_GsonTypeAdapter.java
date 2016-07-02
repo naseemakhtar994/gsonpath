@@ -56,9 +56,9 @@ public final class TestFieldNestingAutocomplete_GsonTypeAdapter extends TypeAdap
                             case "value1":
                                 jsonFieldCounter1++;
 
-                                Integer safeValue0 = getIntegerSafely(in);
-                                if (safeValue0 != null) {
-                                    result.value1 = safeValue0;
+                                Integer value_Json1_value1 = getIntegerSafely(in);
+                                if (value_Json1_value1 != null) {
+                                    result.value1 = value_Json1_value1;
                                 }
                                 break;
 

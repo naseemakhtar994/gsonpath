@@ -39,9 +39,9 @@ public final class TestExclude_GsonTypeAdapter extends TypeAdapter<TestExclude> 
                 case "element1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.element1 = safeValue0;
+                    Integer value_element1 = getIntegerSafely(in);
+                    if (value_element1 != null) {
+                        result.element1 = value_element1;
                     }
                     break;
 

@@ -56,9 +56,9 @@ public final class TestMultipleDelimiters_GsonTypeAdapter extends TypeAdapter<Te
                             case "Nest1":
                                 jsonFieldCounter1++;
 
-                                Integer safeValue0 = getIntegerSafely(in);
-                                if (safeValue0 != null) {
-                                    result.value1 = safeValue0;
+                                Integer value_Json1_Nest1 = getIntegerSafely(in);
+                                if (value_Json1_Nest1 != null) {
+                                    result.value1 = value_Json1_Nest1;
                                 }
                                 break;
 
@@ -75,9 +75,9 @@ public final class TestMultipleDelimiters_GsonTypeAdapter extends TypeAdapter<Te
                 case "Json2.Nest1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue1 = getIntegerSafely(in);
-                    if (safeValue1 != null) {
-                        result.value2 = safeValue1;
+                    Integer value_Json2_Nest1 = getIntegerSafely(in);
+                    if (value_Json2_Nest1 != null) {
+                        result.value2 = value_Json2_Nest1;
                     }
                     break;
 

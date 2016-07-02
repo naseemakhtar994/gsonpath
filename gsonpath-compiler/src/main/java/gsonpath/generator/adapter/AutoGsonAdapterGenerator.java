@@ -15,6 +15,7 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -22,6 +23,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
+    private int mSafeVariableCount = 0;
 
     public AutoGsonAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
@@ -98,34 +100,9 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             }
         }
 
-        // Obtain all possible elements contained within the annotated class, including inherited fields.
-        List<Element> fieldElements = new ArrayList<>();
-        for (Element memberElement : processingEnv.getElementUtils().getAllMembers(modelElement)) {
+        List<FieldInfo> fieldInfoList = getModelFieldsFromElement(modelElement, fieldsRequireAnnotation);
 
-            // Ignore modelElement that are not fields.
-            if (memberElement.getKind() != ElementKind.FIELD) {
-                continue;
-            }
-
-            // Ignore final, static and transient fields.
-            Set<Modifier> modifiers = memberElement.getModifiers();
-            if (modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.STATIC) || modifiers.contains(Modifier.TRANSIENT)) {
-                continue;
-            }
-
-            if (fieldsRequireAnnotation && (memberElement.getAnnotation(SerializedName.class) == null)) {
-                continue;
-            }
-
-            // Ignore any excluded fields
-            if (memberElement.getAnnotation(ExcludeField.class) != null) {
-                continue;
-            }
-
-            fieldElements.add(memberElement);
-        }
-
-        GsonFieldTree fieldTree = createFieldTree(fieldElements, autoGsonAnnotation.rootField(),
+        GsonFieldTree fieldTree = createFieldTree(fieldInfoList, autoGsonAnnotation.rootField(),
                 flattenDelimiter, gsonFieldNamingPolicy, gsonFieldValidationType);
 
         // Adds the mandatory field index constants and also populates the mandatoryInfoMap values.
@@ -150,7 +127,78 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         throw new ProcessingException("Failed to write generated file: " + adapterClassName.simpleName());
     }
 
-    private GsonFieldTree createFieldTree(List<Element> fields,
+    private List<FieldInfo> getModelFieldsFromElement(TypeElement modelElement, boolean fieldsRequireAnnotation) {
+        List<FieldInfo> fieldInfoList = new ArrayList<>();
+
+        // Obtain all possible elements contained within the annotated class, including inherited fields.
+        for (final Element memberElement : processingEnv.getElementUtils().getAllMembers(modelElement)) {
+
+            // Ignore modelElement that are not fields.
+            if (memberElement.getKind() != ElementKind.FIELD) {
+                continue;
+            }
+
+            // Ignore final, static and transient fields.
+            Set<Modifier> modifiers = memberElement.getModifiers();
+            if (modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.STATIC) || modifiers.contains(Modifier.TRANSIENT)) {
+                continue;
+            }
+
+            if (fieldsRequireAnnotation && (memberElement.getAnnotation(SerializedName.class) == null)) {
+                continue;
+            }
+
+            // Ignore any excluded fields
+            if (memberElement.getAnnotation(ExcludeField.class) != null) {
+                continue;
+            }
+
+            fieldInfoList.add(new FieldInfo() {
+                @Override
+                public TypeName getTypeName() {
+                    return TypeName.get(memberElement.asType());
+                }
+
+                @Override
+                public String getParentClassName() {
+                    return memberElement.getEnclosingElement().toString();
+                }
+
+                @Override
+                public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+                    return memberElement.getAnnotation(annotationClass);
+                }
+
+                @Override
+                public String getFieldName() {
+                    return memberElement.getSimpleName().toString();
+                }
+
+                @Override
+                public String[] getAnnotationNames() {
+                    List<? extends AnnotationMirror> annotationMirrors = memberElement.getAnnotationMirrors();
+
+                    String[] annotationNames = new String[annotationMirrors.size()];
+
+                    for (int i = 0; i < annotationMirrors.size(); i++) {
+                        AnnotationMirror annotationMirror = annotationMirrors.get(i);
+                        Element annotationElement = annotationMirror.getAnnotationType().asElement();
+
+                        annotationNames[i] = annotationElement.getSimpleName().toString();
+                    }
+                    return annotationNames;
+                }
+
+                @Override
+                public Element getElement() {
+                    return memberElement;
+                }
+            });
+        }
+        return fieldInfoList;
+    }
+
+    private GsonFieldTree createFieldTree(List<FieldInfo> fieldInfoList,
                                           String rootField,
                                           char flattenDelimiter,
                                           FieldNamingPolicy gsonFieldNamingPolicy,
@@ -169,15 +217,15 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         String regexSafeDelimiter = Pattern.quote(String.valueOf(flattenDelimiter));
 
-        for (Element field : fields) {
-            TypeName fieldTypeName = TypeName.get(field.asType());
+        for (FieldInfo fieldInfo : fieldInfoList) {
+            TypeName fieldTypeName = fieldInfo.getTypeName();
 
             if (fieldTypeName.equals(TypeName.OBJECT)) {
-                throw new ProcessingException("Invalid field type: " + fieldTypeName, field);
+                throw new ProcessingException("Invalid field type: " + fieldTypeName, fieldInfo.getElement());
             }
 
-            SerializedName serializedNameAnnotation = field.getAnnotation(SerializedName.class);
-            String fieldName = field.getSimpleName().toString();
+            SerializedName serializedNameAnnotation = fieldInfo.getAnnotation(SerializedName.class);
+            String fieldName = fieldInfo.getFieldName();
             String jsonFieldPath;
 
             if (serializedNameAnnotation != null && serializedNameAnnotation.value().length() > 0) {
@@ -192,10 +240,8 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             boolean isOptional = false;
 
             // Attempt to find a Nullable or NonNull annotation type.
-            for (AnnotationMirror annotationMirror : field.getAnnotationMirrors()) {
-                Element annotationElement = annotationMirror.getAnnotationType().asElement();
-
-                switch (annotationElement.getSimpleName().toString()) {
+            for (String annotationName : fieldInfo.getAnnotationNames()) {
+                switch (annotationName) {
                     case "Nullable":
                         isOptional = true;
                         break;
@@ -212,13 +258,13 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             // Fields cannot use both annotations.
             if (isMandatory && isOptional) {
-                throw new ProcessingException("Field cannot have both Mandatory and Optional annotations", field);
+                throw new ProcessingException("Field cannot have both Mandatory and Optional annotations", fieldInfo.getElement());
             }
 
             // Primitives should not use either annotation.
-            boolean isPrimitive = field.asType().getKind().isPrimitive();
+            boolean isPrimitive = fieldTypeName.isPrimitive();
             if (isPrimitive && (isMandatory || isOptional)) {
-                throw new ProcessingException("Primitives should not use NonNull or Nullable annotations", field);
+                throw new ProcessingException("Primitives should not use NonNull or Nullable annotations", fieldInfo.getElement());
             }
 
             boolean isRequired = isMandatory;
@@ -274,27 +320,27 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
                             } else {
                                 // If this value already exists, and it is not a tree branch, that means we have an invalid duplicate.
-                                throwDuplicateFieldException(field, currentKey);
+                                throwDuplicateFieldException(fieldInfo.getElement(), currentKey);
                             }
                         }
 
                     } else {
                         // We have reached the end of this branch, add the field at the end.
                         if (!currentFieldTree.containsKey(currentKey)) {
-                            currentFieldTree.addField(currentKey, new FieldInfo(field, jsonFieldPath, isRequired));
+                            currentFieldTree.addField(currentKey, new FieldPathInfo(fieldInfo, jsonFieldPath, isRequired));
 
                         } else {
-                            throwDuplicateFieldException(field, currentKey);
+                            throwDuplicateFieldException(fieldInfo.getElement(), currentKey);
                         }
                     }
                 }
 
             } else {
                 if (!gsonPathFieldTree.containsKey(jsonFieldPath)) {
-                    gsonPathFieldTree.addField(jsonFieldPath, new FieldInfo(field, jsonFieldPath, isRequired));
+                    gsonPathFieldTree.addField(jsonFieldPath, new FieldPathInfo(fieldInfo, jsonFieldPath, isRequired));
 
                 } else {
-                    throwDuplicateFieldException(field, jsonFieldPath);
+                    throwDuplicateFieldException(fieldInfo.getElement(), jsonFieldPath);
                 }
             }
 
@@ -318,8 +364,8 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         for (String branchKey : gsonFieldTree.keySet()) {
             Object treeObject = gsonFieldTree.get(branchKey);
 
-            if (treeObject instanceof FieldInfo) {
-                FieldInfo info = (FieldInfo) treeObject;
+            if (treeObject instanceof FieldPathInfo) {
+                FieldPathInfo info = (FieldPathInfo) treeObject;
 
                 //
                 // For all required fields we add an index field so we can easily check whether the
@@ -327,7 +373,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 //
                 if (info.isRequired) {
                     int mandatoryFieldSize = mandatoryInfoMap.size();
-                    String fieldName = info.fieldName;
+                    String fieldName = info.fieldInfo.getFieldName();
 
                     String mandatoryFieldIndexName = "MANDATORY_INDEX_" + fieldName.toUpperCase();
                     typeBuilder.addField(FieldSpec.builder(TypeName.INT, mandatoryFieldIndexName)
@@ -350,7 +396,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
      */
     private MethodSpec createReadMethod(final ClassName elementClassName,
                                         final Map<String, MandatoryFieldInfo> mandatoryInfoMap,
-                                        GsonFieldTree rootElements) throws ProcessingException {
+                                        final GsonFieldTree rootElements) throws ProcessingException {
 
         MethodSpec.Builder readMethod = MethodSpec.methodBuilder("read")
                 .addAnnotation(Override.class)
@@ -362,7 +408,6 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         final CodeBlock.Builder codeBlock = CodeBlock.builder();
 
         mCounterVariableCount = 0;
-        mSafeVariableCount = 0;
 
         createObjectParser(0, codeBlock, rootElements, new ObjectParserCallback() {
             @Override
@@ -414,7 +459,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 MandatoryFieldInfo mandatoryFieldInfo = mandatoryInfoMap.get(mandatoryKey);
                 codeBlock.add("case $L:\n", mandatoryFieldInfo.indexVariableName);
                 codeBlock.indent();
-                codeBlock.addStatement("fieldName = \"$L\"", mandatoryFieldInfo.fieldInfo.jsonFieldPath);
+                codeBlock.addStatement("fieldName = \"$L\"", mandatoryFieldInfo.fieldPathInfo.jsonPath);
                 codeBlock.addStatement("break");
                 codeBlock.unindent();
                 codeBlock.add("\n");
@@ -449,8 +494,6 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         CodeBlock.Builder codeBlock = CodeBlock.builder();
 
-        mSafeVariableCount = 0;
-
         // Initial block which prevents nulls being accessed.
         codeBlock.beginControlFlow("if (value == null)");
         codeBlock.addStatement("out.nullValue()");
@@ -476,8 +519,9 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         for (String key : jsonMapping.keySet()) {
             Object value = jsonMapping.get(key);
-            if (value instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) value;
+            if (value instanceof FieldPathInfo) {
+                FieldPathInfo fieldPathInfo = (FieldPathInfo) value;
+                FieldInfo fieldInfo = fieldPathInfo.fieldInfo;
 
                 // Make sure the field's annotations don't have any problems.
                 validateFieldAnnotations(fieldInfo);
@@ -486,13 +530,13 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 // Handle the primitive the same way as their wrapper class.
                 // This ensures null safety is handled.
                 //
-                TypeName fieldTypeName = fieldInfo.typeName;
+                TypeName fieldTypeName = fieldInfo.getTypeName();
                 boolean isPrimitive = fieldTypeName.isPrimitive();
 
                 String objectName = "obj" + mSafeVariableCount;
                 mSafeVariableCount++;
 
-                codeBlock.addStatement("$T $L = value.$L", fieldTypeName, objectName, fieldInfo.fieldName);
+                codeBlock.addStatement("$T $L = value.$L", fieldTypeName, objectName, fieldInfo.getFieldName());
 
                 // If we aren't serializing nulls, we need to prevent the 'out.name' code being executed.
                 if (!isPrimitive && !serializeNulls) {
@@ -568,8 +612,8 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             return;
         }
 
-        if (!fieldInfo.typeName.equals(CLASS_NAME_STRING)) {
-            throw new ProcessingException("FlattenObject can only be used on String variables", fieldInfo.element);
+        if (!fieldInfo.getTypeName().equals(CLASS_NAME_STRING)) {
+            throw new ProcessingException("FlattenObject can only be used on String variables", fieldInfo.getElement());
         }
     }
 
@@ -632,11 +676,11 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
      */
     private static class MandatoryFieldInfo {
         final String indexVariableName;
-        final FieldInfo fieldInfo;
+        final FieldPathInfo fieldPathInfo;
 
-        private MandatoryFieldInfo(String indexVariableName, FieldInfo fieldInfo) {
+        private MandatoryFieldInfo(String indexVariableName, FieldPathInfo fieldPathInfo) {
             this.indexVariableName = indexVariableName;
-            this.fieldInfo = fieldInfo;
+            this.fieldPathInfo = fieldPathInfo;
         }
     }
 

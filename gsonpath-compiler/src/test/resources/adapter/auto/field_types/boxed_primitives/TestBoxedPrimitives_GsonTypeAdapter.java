@@ -44,45 +44,45 @@ public final class TestBoxedPrimitives_GsonTypeAdapter extends TypeAdapter<TestB
                 case "value1":
                     jsonFieldCounter0++;
 
-                    String safeValue0 = getStringSafely(in);
-                    if (safeValue0 != null) {
-                        result.value1 = safeValue0;
+                    String value_value1 = getStringSafely(in);
+                    if (value_value1 != null) {
+                        result.value1 = value_value1;
                     }
                     break;
 
                 case "value2":
                     jsonFieldCounter0++;
 
-                    Boolean safeValue1 = getBooleanSafely(in);
-                    if (safeValue1 != null) {
-                        result.value2 = safeValue1;
+                    Boolean value_value2 = getBooleanSafely(in);
+                    if (value_value2 != null) {
+                        result.value2 = value_value2;
                     }
                     break;
 
                 case "value3":
                     jsonFieldCounter0++;
 
-                    Integer safeValue2 = getIntegerSafely(in);
-                    if (safeValue2 != null) {
-                        result.value3 = safeValue2;
+                    Integer value_value3 = getIntegerSafely(in);
+                    if (value_value3 != null) {
+                        result.value3 = value_value3;
                     }
                     break;
 
                 case "value4":
                     jsonFieldCounter0++;
 
-                    Double safeValue3 = getDoubleSafely(in);
-                    if (safeValue3 != null) {
-                        result.value4 = safeValue3;
+                    Double value_value4 = getDoubleSafely(in);
+                    if (value_value4 != null) {
+                        result.value4 = value_value4;
                     }
                     break;
 
                 case "value5":
                     jsonFieldCounter0++;
 
-                    Long safeValue4 = getLongSafely(in);
-                    if (safeValue4 != null) {
-                        result.value5 = safeValue4;
+                    Long value_value5 = getLongSafely(in);
+                    if (value_value5 != null) {
+                        result.value5 = value_value5;
                     }
                     break;
 

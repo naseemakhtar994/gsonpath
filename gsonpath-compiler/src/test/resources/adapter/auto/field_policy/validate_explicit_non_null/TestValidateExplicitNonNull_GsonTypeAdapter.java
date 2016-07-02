@@ -46,9 +46,9 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
                 case "mandatory1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.mandatory1 = safeValue0;
+                    Integer value_mandatory1 = getIntegerSafely(in);
+                    if (value_mandatory1 != null) {
+                        result.mandatory1 = value_mandatory1;
                         mandatoryFieldsCheckList[MANDATORY_INDEX_MANDATORY1] = true;
                     } else {
                         throw new gsonpath.JsonFieldMissingException("Mandatory JSON element 'mandatory1' was null for class 'adapter.auto.field_policy.validate_explicit_non_null.TestValidateExplicitNonNull'");
@@ -58,9 +58,9 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
                 case "mandatory2":
                     jsonFieldCounter0++;
 
-                    Integer safeValue1 = getIntegerSafely(in);
-                    if (safeValue1 != null) {
-                        result.mandatory2 = safeValue1;
+                    Integer value_mandatory2 = getIntegerSafely(in);
+                    if (value_mandatory2 != null) {
+                        result.mandatory2 = value_mandatory2;
                         mandatoryFieldsCheckList[MANDATORY_INDEX_MANDATORY2] = true;
                     } else {
                         throw new gsonpath.JsonFieldMissingException("Mandatory JSON element 'mandatory2' was null for class 'adapter.auto.field_policy.validate_explicit_non_null.TestValidateExplicitNonNull'");
@@ -70,9 +70,9 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
                 case "mandatory3":
                     jsonFieldCounter0++;
 
-                    Integer safeValue2 = getIntegerSafely(in);
-                    if (safeValue2 != null) {
-                        result.mandatory3 = safeValue2;
+                    Integer value_mandatory3 = getIntegerSafely(in);
+                    if (value_mandatory3 != null) {
+                        result.mandatory3 = value_mandatory3;
                         mandatoryFieldsCheckList[MANDATORY_INDEX_MANDATORY3] = true;
                     } else {
                         throw new gsonpath.JsonFieldMissingException("Mandatory JSON element 'mandatory3' was null for class 'adapter.auto.field_policy.validate_explicit_non_null.TestValidateExplicitNonNull'");
@@ -82,9 +82,9 @@ public final class TestValidateExplicitNonNull_GsonTypeAdapter extends TypeAdapt
                 case "optional1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue3 = getIntegerSafely(in);
-                    if (safeValue3 != null) {
-                        result.optional1 = safeValue3;
+                    Integer value_optional1 = getIntegerSafely(in);
+                    if (value_optional1 != null) {
+                        result.optional1 = value_optional1;
                     }
                     break;
 

@@ -43,63 +43,63 @@ public final class TestSerializeNulls_GsonTypeAdapter extends TypeAdapter<TestSe
                 case "value1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.value1 = safeValue0;
+                    Integer value_value1 = getIntegerSafely(in);
+                    if (value_value1 != null) {
+                        result.value1 = value_value1;
                     }
                     break;
 
                 case "value2":
                     jsonFieldCounter0++;
 
-                    Double safeValue1 = getDoubleSafely(in);
-                    if (safeValue1 != null) {
-                        result.value2 = safeValue1;
+                    Double value_value2 = getDoubleSafely(in);
+                    if (value_value2 != null) {
+                        result.value2 = value_value2;
                     }
                     break;
 
                 case "value3":
                     jsonFieldCounter0++;
 
-                    Boolean safeValue2 = getBooleanSafely(in);
-                    if (safeValue2 != null) {
-                        result.value3 = safeValue2;
+                    Boolean value_value3 = getBooleanSafely(in);
+                    if (value_value3 != null) {
+                        result.value3 = value_value3;
                     }
                     break;
 
                 case "value4":
                     jsonFieldCounter0++;
 
-                    String safeValue3 = getStringSafely(in);
-                    if (safeValue3 != null) {
-                        result.value4 = safeValue3;
+                    String value_value4 = getStringSafely(in);
+                    if (value_value4 != null) {
+                        result.value4 = value_value4;
                     }
                     break;
 
                 case "value5":
                     jsonFieldCounter0++;
 
-                    Integer safeValue4 = getIntegerSafely(in);
-                    if (safeValue4 != null) {
-                        result.value5 = safeValue4;
+                    Integer value_value5 = getIntegerSafely(in);
+                    if (value_value5 != null) {
+                        result.value5 = value_value5;
                     }
                     break;
 
                 case "value6":
                     jsonFieldCounter0++;
 
-                    Double safeValue5 = getDoubleSafely(in);
-                    if (safeValue5 != null) {
-                        result.value6 = safeValue5;
+                    Double value_value6 = getDoubleSafely(in);
+                    if (value_value6 != null) {
+                        result.value6 = value_value6;
                     }
                     break;
 
                 case "value7":
                     jsonFieldCounter0++;
 
-                    Boolean safeValue6 = getBooleanSafely(in);
-                    if (safeValue6 != null) {
-                        result.value7 = safeValue6;
+                    Boolean value_value7 = getBooleanSafely(in);
+                    if (value_value7 != null) {
+                        result.value7 = value_value7;
                     }
                     break;
 

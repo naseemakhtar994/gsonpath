@@ -62,9 +62,9 @@ public final class TestDefaultsUseInheritanceModel_GsonTypeAdapter extends TypeA
                             case "expectedValue":
                                 jsonFieldCounter1++;
 
-                                Integer safeValue0 = getIntegerSafely(in);
-                                if (safeValue0 != null) {
-                                    result.expectedValue = safeValue0;
+                                Integer value_path_expectedValue = getIntegerSafely(in);
+                                if (value_path_expectedValue != null) {
+                                    result.expectedValue = value_path_expectedValue;
                                     mandatoryFieldsCheckList[MANDATORY_INDEX_EXPECTEDVALUE] = true;
 
                                 } else {

@@ -41,10 +41,10 @@ public final class TestGenerics_GsonTypeAdapter extends TypeAdapter<TestGenerics
                 case "value1":
                     jsonFieldCounter0++;
 
-                    java.util.List<java.lang.String> safeValue0 = mGson.getAdapter(new com.google.gson.reflect.TypeToken<java.util.List<java.lang.String>>() {
+                    java.util.List<java.lang.String> value_value1 = mGson.getAdapter(new com.google.gson.reflect.TypeToken<java.util.List<java.lang.String>>() {
                     }).read(in);
-                    if (safeValue0 != null) {
-                        result.value1 = safeValue0;
+                    if (value_value1 != null) {
+                        result.value1 = value_value1;
                     }
                     break;
 

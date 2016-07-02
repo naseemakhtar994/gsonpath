@@ -286,7 +286,6 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         builder.beginControlFlow("try");
         if (rootElements.size() > 0) {
             mCounterVariableCount = 0;
-            mSafeVariableCount = 0;
 
             createObjectParser(0, builder, rootElements, callback);
         }

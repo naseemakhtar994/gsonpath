@@ -73,9 +73,9 @@ public final class TestRootNesting_GsonTypeAdapter extends TypeAdapter<TestRootN
                                         case "value1":
                                             jsonFieldCounter2++;
 
-                                            Integer safeValue0 = getIntegerSafely(in);
-                                            if (safeValue0 != null) {
-                                                result.value1 = safeValue0;
+                                            Integer value_value1 = getIntegerSafely(in);
+                                            if (value_value1 != null) {
+                                                result.value1 = value_value1;
                                             }
                                             break;
 

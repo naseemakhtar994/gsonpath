@@ -39,9 +39,9 @@ public final class TestFieldNesting_GsonTypeAdapter extends TypeAdapter<TestFiel
                 case "Json1":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.value1 = safeValue0;
+                    Integer value_Json1 = getIntegerSafely(in);
+                    if (value_Json1 != null) {
+                        result.value1 = value_Json1;
                     }
                     break;
 
@@ -65,9 +65,9 @@ public final class TestFieldNesting_GsonTypeAdapter extends TypeAdapter<TestFiel
                             case "Nest1":
                                 jsonFieldCounter1++;
 
-                                Integer safeValue1 = getIntegerSafely(in);
-                                if (safeValue1 != null) {
-                                    result.value2 = safeValue1;
+                                Integer value_Json2_Nest1 = getIntegerSafely(in);
+                                if (value_Json2_Nest1 != null) {
+                                    result.value2 = value_Json2_Nest1;
                                 }
                                 break;
 
@@ -91,18 +91,18 @@ public final class TestFieldNesting_GsonTypeAdapter extends TypeAdapter<TestFiel
                                         case "EndPoint1":
                                             jsonFieldCounter2++;
 
-                                            Integer safeValue2 = getIntegerSafely(in);
-                                            if (safeValue2 != null) {
-                                                result.value3 = safeValue2;
+                                            Integer value_Json2_Nest2_EndPoint1 = getIntegerSafely(in);
+                                            if (value_Json2_Nest2_EndPoint1 != null) {
+                                                result.value3 = value_Json2_Nest2_EndPoint1;
                                             }
                                             break;
 
                                         case "EndPoint2":
                                             jsonFieldCounter2++;
 
-                                            Integer safeValue3 = getIntegerSafely(in);
-                                            if (safeValue3 != null) {
-                                                result.value4 = safeValue3;
+                                            Integer value_Json2_Nest2_EndPoint2 = getIntegerSafely(in);
+                                            if (value_Json2_Nest2_EndPoint2 != null) {
+                                                result.value4 = value_Json2_Nest2_EndPoint2;
                                             }
                                             break;
 

@@ -39,9 +39,9 @@ public final class TestNamePolicyIdentity_GsonTypeAdapter extends TypeAdapter<Te
                 case "testValue":
                     jsonFieldCounter0++;
 
-                    Integer safeValue0 = getIntegerSafely(in);
-                    if (safeValue0 != null) {
-                        result.testValue = safeValue0;
+                    Integer value_testValue = getIntegerSafely(in);
+                    if (value_testValue != null) {
+                        result.testValue = value_testValue;
                     }
                     break;
 

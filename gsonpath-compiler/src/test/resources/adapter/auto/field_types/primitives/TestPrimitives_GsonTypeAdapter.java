@@ -39,36 +39,36 @@ public final class TestPrimitives_GsonTypeAdapter extends TypeAdapter<TestPrimit
                 case "value1":
                     jsonFieldCounter0++;
 
-                    Boolean safeValue0 = getBooleanSafely(in);
-                    if (safeValue0 != null) {
-                        result.value1 = safeValue0;
+                    Boolean value_value1 = getBooleanSafely(in);
+                    if (value_value1 != null) {
+                        result.value1 = value_value1;
                     }
                     break;
 
                 case "value2":
                     jsonFieldCounter0++;
 
-                    Integer safeValue1 = getIntegerSafely(in);
-                    if (safeValue1 != null) {
-                        result.value2 = safeValue1;
+                    Integer value_value2 = getIntegerSafely(in);
+                    if (value_value2 != null) {
+                        result.value2 = value_value2;
                     }
                     break;
 
                 case "value3":
                     jsonFieldCounter0++;
 
-                    Double safeValue2 = getDoubleSafely(in);
-                    if (safeValue2 != null) {
-                        result.value3 = safeValue2;
+                    Double value_value3 = getDoubleSafely(in);
+                    if (value_value3 != null) {
+                        result.value3 = value_value3;
                     }
                     break;
 
                 case "value4":
                     jsonFieldCounter0++;
 
-                    Long safeValue3 = getLongSafely(in);
-                    if (safeValue3 != null) {
-                        result.value4 = safeValue3;
+                    Long value_value4 = getLongSafely(in);
+                    if (value_value4 != null) {
+                        result.value4 = value_value4;
                     }
                     break;
 

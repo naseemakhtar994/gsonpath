@@ -13,7 +13,7 @@ public class GsonFieldTree {
         fieldMap.put(branchName, gsonFieldTree);
     }
 
-    public void addField(String branchName, FieldInfo field) throws IllegalArgumentException {
+    public void addField(String branchName, FieldPathInfo field) throws IllegalArgumentException {
         if (containsKey(branchName)) {
             throw new IllegalArgumentException("Value already exists");
         }

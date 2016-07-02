@@ -41,9 +41,9 @@ public final class TestFlattenJson_GsonTypeAdapter extends TypeAdapter<TestFlatt
                 case "value1":
                     jsonFieldCounter0++;
 
-                    JsonElement safeValue0 = mGson.getAdapter(JsonElement.class).read(in);
-                    if (safeValue0 != null) {
-                        result.value1 = safeValue0.toString();
+                    JsonElement value_value1 = mGson.getAdapter(JsonElement.class).read(in);
+                    if (value_value1 != null) {
+                        result.value1 = value_value1.toString();
                     }
                     break;
 
