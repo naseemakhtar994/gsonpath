@@ -1,4 +1,4 @@
-package adapter.auto.field_types.primitives;
+package adapter.auto.field_types.primitives.valid;
 
 import static gsonpath.GsonUtil.*;
 
@@ -10,21 +10,21 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.lang.Override;
 
-public final class TestPrimitives_GsonTypeAdapter extends TypeAdapter<TestPrimitives> {
+public final class TestValidPrimitives_GsonTypeAdapter extends TypeAdapter<TestValidPrimitives> {
     private final Gson mGson;
 
-    public TestPrimitives_GsonTypeAdapter(Gson gson) {
+    public TestValidPrimitives_GsonTypeAdapter(Gson gson) {
         this.mGson = gson;
     }
 
     @Override
-    public TestPrimitives read(JsonReader in) throws IOException {
+    public TestValidPrimitives read(JsonReader in) throws IOException {
 
         // Ensure the object is not null.
         if (!isValidValue(in)) {
             return null;
         }
-        TestPrimitives result = new TestPrimitives();
+        TestValidPrimitives result = new TestValidPrimitives();
 
         int jsonFieldCounter0 = 0;
         in.beginObject();
@@ -84,7 +84,7 @@ public final class TestPrimitives_GsonTypeAdapter extends TypeAdapter<TestPrimit
     }
 
     @Override
-    public void write(JsonWriter out, TestPrimitives value) throws IOException {
+    public void write(JsonWriter out, TestValidPrimitives value) throws IOException {
         if (value == null) {
             out.nullValue();
             return;

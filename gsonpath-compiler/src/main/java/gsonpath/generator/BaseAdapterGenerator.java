@@ -13,6 +13,13 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public abstract class BaseAdapterGenerator extends Generator {
+    private static final Set<TypeName> GSON_SUPPORTED_PRIMITIVE = new HashSet<>(Arrays.asList(
+            TypeName.BOOLEAN,
+            TypeName.INT,
+            TypeName.LONG,
+            TypeName.DOUBLE
+    ));
+
     protected static final Set<TypeName> GSON_SUPPORTED_CLASSES = new HashSet<>(Arrays.asList(
             TypeName.get(Boolean.class),
             TypeName.get(Integer.class),
@@ -135,6 +142,11 @@ public abstract class BaseAdapterGenerator extends Generator {
                 String safeVariableName = fieldPathInfo.getSafeVariableName();
 
                 boolean callToString = false;
+
+                // If the field type is primitive, ensure that it is a supported primitive.
+                if (fieldTypeName.isPrimitive() && !GSON_SUPPORTED_PRIMITIVE.contains(fieldTypeName)) {
+                    throw new ProcessingException("Unsupported primitive type found. Only boolean, int, double and long can be used.", fieldInfo.getElement());
+                }
 
                 if (GSON_SUPPORTED_CLASSES.contains(fieldTypeName.box())) {
                     ClassName fieldClassName = (ClassName) fieldTypeName.box();
