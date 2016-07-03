@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+Version 1.4.1 *(2016-07-03)*
+----------------------------
+
+* Fix: The `VALIDATE_EXPLICIT_NON_NULL` value for the `FieldValidationType` enum now correctly treats primitives as `@NonNull`. This behaviour now matches the documentation.
+* Fix: Using an unsupported primitive type within an `@AutoGsonAdapter` annotated class now throws a more informative error. The primitives supported by Gson are: `boolean`, `int`, `long`, `double`.
+
 Version 1.4.0 *(2016-05-26)*
 ----------------------------
 
