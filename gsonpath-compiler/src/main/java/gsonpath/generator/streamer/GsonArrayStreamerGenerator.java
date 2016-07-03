@@ -287,7 +287,7 @@ public class GsonArrayStreamerGenerator extends BaseAdapterGenerator {
         if (rootElements.size() > 0) {
             mCounterVariableCount = 0;
 
-            createObjectParser(0, builder, rootElements, callback);
+            createObjectParser(true, 0, builder, rootElements, callback);
         }
         builder.nextControlFlow("catch ($T e)", ClassName.get(IOException.class));
         builder.addStatement("throw new $T(e)", ClassName.get(JsonSyntaxException.class));

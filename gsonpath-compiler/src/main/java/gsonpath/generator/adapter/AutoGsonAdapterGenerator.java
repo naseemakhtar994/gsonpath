@@ -100,7 +100,28 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
             }
         }
 
-        List<FieldInfo> fieldInfoList = getModelFieldsFromElement(modelElement, fieldsRequireAnnotation);
+        ClassName concreteClassName;
+        List<FieldInfo> fieldInfoList;
+        boolean isModelInterface = modelElement.getKind().isInterface();
+        if (!isModelInterface) {
+            concreteClassName = modelClassName;
+
+            fieldInfoList = getModelFieldsFromElement(modelElement, fieldsRequireAnnotation);
+
+        } else {
+            ModelInterfaceGenerator.InterfaceInfo interfaceInfo = new ModelInterfaceGenerator(processingEnv).handle(modelElement);
+            concreteClassName = interfaceInfo.parentClassName;
+
+            fieldInfoList = getModelFieldsFromInterface(interfaceInfo);
+
+            // Model interfaces must use field validation to prevent issues with primitives.
+            switch (gsonFieldValidationType) {
+                case NO_VALIDATION:
+                case NO_VALIDATION_OR_INHERIT_DEFAULT_IF_AVAILABLE:
+                    gsonFieldValidationType = GsonFieldValidationType.VALIDATE_EXPLICIT_NON_NULL;
+                    break;
+            }
+        }
 
         GsonFieldTree fieldTree = createFieldTree(fieldInfoList, autoGsonAnnotation.rootField(),
                 flattenDelimiter, gsonFieldNamingPolicy, gsonFieldValidationType);
@@ -117,8 +138,14 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                     .build());
         }
 
-        adapterTypeBuilder.addMethod(createReadMethod(modelClassName, mandatoryInfoMap, fieldTree));
-        adapterTypeBuilder.addMethod(createWriteMethod(modelClassName, fieldTree, serializeNulls));
+        adapterTypeBuilder.addMethod(createReadMethod(modelClassName, concreteClassName, mandatoryInfoMap, fieldTree));
+
+        if (!isModelInterface) {
+            adapterTypeBuilder.addMethod(createWriteMethod(modelClassName, fieldTree, serializeNulls));
+
+        } else {
+            adapterTypeBuilder.addMethod(createEmptyWriteMethod(modelClassName));
+        }
 
         if (writeFile(adapterClassName.packageName(), adapterTypeBuilder)) {
             return new HandleResult(modelClassName, adapterClassName);
@@ -192,6 +219,56 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 @Override
                 public Element getElement() {
                     return memberElement;
+                }
+            });
+        }
+        return fieldInfoList;
+    }
+
+    private List<FieldInfo> getModelFieldsFromInterface(final ModelInterfaceGenerator.InterfaceInfo interfaceInfo) {
+        List<FieldInfo> fieldInfoList = new ArrayList<>();
+
+        for (final ModelInterfaceGenerator.InterfaceFieldInfo fieldSpec : interfaceInfo.fieldInfo) {
+
+            fieldInfoList.add(new FieldInfo() {
+                @Override
+                public TypeName getTypeName() {
+                    return fieldSpec.typeName;
+                }
+
+                @Override
+                public String getParentClassName() {
+                    return interfaceInfo.parentClassName.toString();
+                }
+
+                @Override
+                public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+                    return fieldSpec.methodElement.getAnnotation(annotationClass);
+                }
+
+                @Override
+                public String getFieldName() {
+                    return fieldSpec.fieldName;
+                }
+
+                @Override
+                public String[] getAnnotationNames() {
+                    List<? extends AnnotationMirror> annotationMirrors = fieldSpec.methodElement.getAnnotationMirrors();
+
+                    String[] annotationNames = new String[annotationMirrors.size()];
+
+                    for (int i = 0; i < annotationMirrors.size(); i++) {
+                        AnnotationMirror annotationMirror = annotationMirrors.get(i);
+                        Element annotationElement = annotationMirror.getAnnotationType().asElement();
+
+                        annotationNames[i] = annotationElement.getSimpleName().toString();
+                    }
+                    return annotationNames;
+                }
+
+                @Override
+                public Element getElement() {
+                    return fieldSpec.methodElement;
                 }
             });
         }
@@ -394,14 +471,19 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
     /**
      * public ImageSizes read(JsonReader in) throws IOException {
      */
-    private MethodSpec createReadMethod(final ClassName elementClassName,
+    private MethodSpec createReadMethod(final ClassName baseElement,
+                                        final ClassName concreteElement,
                                         final Map<String, MandatoryFieldInfo> mandatoryInfoMap,
                                         final GsonFieldTree rootElements) throws ProcessingException {
+
+        // Create a flat list of the variables
+        final List<FieldPathInfo> flattenedFields = new ArrayList<>();
+        getFlattenedFields(rootElements, flattenedFields);
 
         MethodSpec.Builder readMethod = MethodSpec.methodBuilder("read")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(elementClassName)
+                .returns(baseElement)
                 .addParameter(JsonReader.class, "in")
                 .addException(IOException.class);
 
@@ -409,7 +491,8 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
         mCounterVariableCount = 0;
 
-        createObjectParser(0, codeBlock, rootElements, new ObjectParserCallback() {
+        final boolean modelAlreadyCreated = baseElement.equals(concreteElement);
+        createObjectParser(modelAlreadyCreated, 0, codeBlock, rootElements, new ObjectParserCallback() {
             @Override
             public void onInitialObjectNull() {
                 codeBlock.addStatement("return null");
@@ -417,7 +500,44 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             @Override
             public void onInitialise() {
-                codeBlock.addStatement("$T result = new $T()", elementClassName, elementClassName);
+                if (modelAlreadyCreated) {
+                    codeBlock.addStatement("$T result = new $T()", concreteElement, concreteElement);
+
+                } else {
+                    for (FieldPathInfo fieldPathInfo : flattenedFields) {
+                        FieldInfo fieldInfo = fieldPathInfo.fieldInfo;
+
+                        // Don't initialise primitives, we rely on validation to throw an exception if the value does not exist.
+                        TypeName typeName = fieldInfo.getTypeName();
+                        String variableDeclaration = String.format("%s %s", typeName, fieldPathInfo.getVariableName());
+
+                        String defaultValue = "null";
+                        if (typeName.isPrimitive()) {
+                            if (typeName == TypeName.INT || typeName == TypeName.BYTE || typeName == TypeName.SHORT) {
+                                defaultValue = "0";
+
+                            } else if (typeName == TypeName.LONG) {
+                                defaultValue = "0L";
+
+                            } else if (typeName == TypeName.FLOAT) {
+                                defaultValue = "0f";
+
+                            } else if (typeName == TypeName.DOUBLE) {
+                                defaultValue = "0d";
+
+                            } else if (typeName == TypeName.CHAR) {
+                                defaultValue = "'\\0'";
+
+                            } else if (typeName == TypeName.BOOLEAN) {
+                                defaultValue = "false";
+                            }
+                        }
+
+                        codeBlock.addStatement(variableDeclaration + " = " + defaultValue,
+                                typeName,
+                                fieldPathInfo.getVariableName());
+                    }
+                }
 
                 // If we have any mandatory fields, we need to keep track of what has been assigned.
                 if (mandatoryInfoMap.size() > 0) {
@@ -467,15 +587,63 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             codeBlock.endControlFlow(); // Switch
             codeBlock.addStatement("throw new gsonpath.JsonFieldMissingException(\"Mandatory JSON " +
-                    "element '\" + fieldName + \"' was not found for class '$L'\")", elementClassName);
+                    "element '\" + fieldName + \"' was not found for class '$L'\")", concreteElement);
             codeBlock.endControlFlow(); // If
             codeBlock.endControlFlow(); // For
         }
 
-        codeBlock.addStatement("return result");
+        if (modelAlreadyCreated) {
+            codeBlock.addStatement("return result");
+
+        } else {
+            CodeBlock.Builder returnCodeBlock = CodeBlock.builder();
+            returnCodeBlock.add("return new $T(\n", concreteElement);
+            returnCodeBlock.indent();
+
+            for (int i = 0; i < flattenedFields.size(); i++) {
+                returnCodeBlock.add(flattenedFields.get(i).getVariableName());
+
+                if (i < flattenedFields.size() - 1) {
+                    returnCodeBlock.add(",");
+                }
+
+                returnCodeBlock.add("\n");
+            }
+
+            returnCodeBlock.unindent();
+            returnCodeBlock.add(");\n");
+            codeBlock.add(returnCodeBlock.build());
+
+        }
         readMethod.addCode(codeBlock.build());
 
         return readMethod.build();
+    }
+
+    private void getFlattenedFields(GsonFieldTree currentTree, List<FieldPathInfo> flattenedFields) {
+        for (String key : currentTree.keySet()) {
+            Object value = currentTree.get(key);
+            if (value instanceof FieldPathInfo) {
+                flattenedFields.add((FieldPathInfo) value);
+
+            } else {
+                GsonFieldTree nextLevelMap = (GsonFieldTree) value;
+                if (nextLevelMap.size() > 0) {
+                    getFlattenedFields(nextLevelMap, flattenedFields);
+                }
+            }
+        }
+    }
+
+    private MethodSpec createEmptyWriteMethod(ClassName elementClassName) throws ProcessingException {
+        MethodSpec.Builder writeMethod = MethodSpec.methodBuilder("write")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(JsonWriter.class, "out")
+                .addParameter(elementClassName, "value")
+                .addException(IOException.class);
+
+        return writeMethod.build();
     }
 
     /**
@@ -526,10 +694,6 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                 // Make sure the field's annotations don't have any problems.
                 validateFieldAnnotations(fieldInfo);
 
-                //
-                // Handle the primitive the same way as their wrapper class.
-                // This ensures null safety is handled.
-                //
                 TypeName fieldTypeName = fieldInfo.getTypeName();
                 boolean isPrimitive = fieldTypeName.isPrimitive();
 
