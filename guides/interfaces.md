@@ -1,18 +1,18 @@
 Interfaces
 =
 
-Gson Path supports using the `AutoGsonAdapter` annotation on interfaces.
+Gson Path supports using the `AutoGsonAdapter` annotation with interfaces.
 
 The library generates an immutable POJO which is used as the concrete implementation of the interface.
 
 Differences to standard POJO
 -
 There are a few key differences between standard classes using the `AutoGsonAdapter` annotation, and an interface that you should be aware of. These are:
- * Although the `GsonFieldValidationType` can only ever be `VALIDATE_EXPLICIT_NON_NULL` or `VALIDATE_ALL_EXCEPT_NULLABLE`. 
+ * The `GsonFieldValidationType` property can only ever be `VALIDATE_EXPLICIT_NON_NULL` or `VALIDATE_ALL_EXCEPT_NULLABLE`. 
    * This API design decision was made since you are unable to set a default value for primitive return types. 
    * If the `GsonFieldValidationType` is not one of the previously mentioned values, it will be forced to `VALIDATE_EXPLICIT_NON_NULL`. 
  * When designing your interface:
-   * Be sure to always specify a return type.
+   * Be sure to always specify a return type for methods.
    * The library creates variable names by stripping the characters until it reaches the first uppercase letter. Be sure to begin the name of the method with a 'get' or 'is' or whatever POJO standard you wish to ensure you don't encounter name collisions. 
    * Be aware that although the generated object POJO itself is immutable, the objects contained within the class may not be. 
  

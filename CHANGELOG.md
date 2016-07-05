@@ -4,8 +4,8 @@ Change Log
 Version 1.5.0 *(2016-07-03)*
 ----------------------------
 
-* New: The `@AutoGsonAdapter` annotation to an interface.
-     * Creates an immutable POJO which is constructed within the generated Gson `TypeAdapter` class.
+* New: The `@AutoGsonAdapter` annotation can now be used with interfaces.
+     * The library generates an immutable POJO which is constructed within the generated Gson `TypeAdapter` class.
      * To learn more about this feature, visit the [interfaces guide](guides/interfaces.md).
 
 Version 1.4.1 *(2016-07-03)*
