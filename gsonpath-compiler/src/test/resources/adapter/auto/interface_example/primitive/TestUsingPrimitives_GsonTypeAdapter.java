@@ -35,6 +35,10 @@ public final class TestUsingPrimitives_GsonTypeAdapter extends TypeAdapter<TestU
         long value_longExample = 0L;
         double value_doubleExample = 0d;
         boolean value_booleanExample = false;
+        int[] value_intArrayExample = null;
+        long[] value_longArrayExample = null;
+        double[] value_doubleArrayExample = null;
+        boolean[] value_booleanArrayExample = null;
 
         boolean[] mandatoryFieldsCheckList = new boolean[MANDATORY_FIELDS_SIZE];
 
@@ -42,7 +46,7 @@ public final class TestUsingPrimitives_GsonTypeAdapter extends TypeAdapter<TestU
         in.beginObject();
 
         while (in.hasNext()) {
-            if (jsonFieldCounter0 == 4) {
+            if (jsonFieldCounter0 == 8) {
                 in.skipValue();
                 continue;
             }
@@ -100,6 +104,26 @@ public final class TestUsingPrimitives_GsonTypeAdapter extends TypeAdapter<TestU
                     }
                     break;
 
+                case "intArrayExample":
+                    jsonFieldCounter0++;
+                    value_intArrayExample = mGson.getAdapter(int[].class).read(in);
+                    break;
+
+                case "longArrayExample":
+                    jsonFieldCounter0++;
+                    value_longArrayExample = mGson.getAdapter(long[].class).read(in);
+                    break;
+
+                case "doubleArrayExample":
+                    jsonFieldCounter0++;
+                    value_doubleArrayExample = mGson.getAdapter(double[].class).read(in);
+                    break;
+
+                case "booleanArrayExample":
+                    jsonFieldCounter0++;
+                    value_booleanArrayExample = mGson.getAdapter(boolean[].class).read(in);
+                    break;
+
                 default:
                     in.skipValue();
                     break;
@@ -141,7 +165,11 @@ public final class TestUsingPrimitives_GsonTypeAdapter extends TypeAdapter<TestU
                 value_intExample,
                 value_longExample,
                 value_doubleExample,
-                value_booleanExample
+                value_booleanExample,
+                value_intArrayExample,
+                value_longArrayExample,
+                value_doubleArrayExample,
+                value_booleanArrayExample
         );
     }
 
