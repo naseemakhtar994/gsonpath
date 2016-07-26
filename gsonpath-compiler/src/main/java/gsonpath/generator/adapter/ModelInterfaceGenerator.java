@@ -40,17 +40,23 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
                 .addModifiers(Modifier.PUBLIC);
 
         List<InterfaceFieldInfo> interfaceInfoList = new ArrayList<>();
-        for (Element enclosedElement : element.getEnclosedElements()) {
-            if (enclosedElement.getKind() == ElementKind.METHOD) {
-                ExecutableType methodType = (ExecutableType) enclosedElement.asType();
+        for (final Element memberElement : processingEnv.getElementUtils().getAllMembers(element)) {
+            if (memberElement.getKind() == ElementKind.METHOD) {
+
+                // Ignore methods from the base Object class
+                if (TypeName.get(memberElement.getEnclosingElement().asType()).equals(TypeName.OBJECT)) {
+                    continue;
+                }
+
+                ExecutableType methodType = (ExecutableType) memberElement.asType();
                 TypeMirror returnType = methodType.getReturnType();
                 TypeName typeName = TypeName.get(returnType);
 
                 if (typeName == null) {
-                    throw new ProcessingException("Interface methods must not return null", enclosedElement);
+                    throw new ProcessingException("Interface methods must not return null", memberElement);
                 }
 
-                String methodName = enclosedElement.getSimpleName().toString();
+                String methodName = memberElement.getSimpleName().toString();
 
                 // Transform the method name into the field name by removing the first camel-cased portion.
                 String fieldName = methodName;
@@ -78,7 +84,7 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
                 constructorBuilder.addParameter(typeName, fieldName);
                 constructorBuilder.addStatement("this.$L = $L", fieldName, fieldName);
 
-                interfaceInfoList.add(new InterfaceFieldInfo(enclosedElement, typeName, fieldName));
+                interfaceInfoList.add(new InterfaceFieldInfo(memberElement, typeName, fieldName));
             }
         }
 
