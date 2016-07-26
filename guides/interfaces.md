@@ -13,6 +13,7 @@ There are a few key differences between standard classes using the `AutoGsonAdap
    * If the `GsonFieldValidationType` is not one of the previously mentioned values, it will be forced to `VALIDATE_EXPLICIT_NON_NULL`. 
  * When designing your interface:
    * Be sure to always specify a return type for methods.
+   * Do not add any parameters to your method as this method should acts as a 'getter'.
    * The library creates variable names by stripping the characters until it reaches the first uppercase letter. Be sure to begin the name of the method with a 'get' or 'is' or whatever POJO standard you wish to ensure you don't encounter name collisions. 
    * Be aware that although the generated object POJO itself is immutable, the objects contained within the class may not be. 
  

@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+Version 1.5.1 *(2016-07-26)*
+----------------------------
+
+* Fix: Changed `JsonFieldMissingException` to extend the Gson `JsonParseException` class to more easily prevent possible uncaught exceptions.
+* Fix: Interfaces annotated with `@AutoGsonAdapter` now correctly work with inheritance.
+* Fix: Interfaces annotated with `@AutoGsonAdapter` are now stricter about their implementation. (See [interfaces guide](guides/interfaces.md) for details surrounding interface design)
+     * Methods that do not specify a return type will now fail gracefully.
+     * Methods that specify parameters will now fail gracefully.
+
 Version 1.5.0 *(2016-07-03)*
 ----------------------------
 
