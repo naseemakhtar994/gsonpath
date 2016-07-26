@@ -52,8 +52,12 @@ class ModelInterfaceGenerator extends BaseAdapterGenerator {
                 TypeMirror returnType = methodType.getReturnType();
                 TypeName typeName = TypeName.get(returnType);
 
-                if (typeName == null) {
-                    throw new ProcessingException("Interface methods must not return null", memberElement);
+                if (typeName == null || typeName.equals(TypeName.VOID)) {
+                    throw new ProcessingException("Gson Path interface methods must have a return type", memberElement);
+                }
+                
+                if (methodType.getParameterTypes().size() > 0) {
+                    throw new ProcessingException("Gson Path interface methods must not have parameters", memberElement);
                 }
 
                 String methodName = memberElement.getSimpleName().toString();
