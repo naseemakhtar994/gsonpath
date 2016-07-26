@@ -51,6 +51,26 @@ public final class InterfaceExample_GsonPathModel implements InterfaceExample {
     public int getPrimitiveExample() {
         return primitiveExample;
     }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        InterfaceExample_GsonPathModel that = (InterfaceExample_GsonPathModel) o;
+        
+        if ((objectExample == null || !objectExample.equals(that.objectExample))) return false;
+        if (primitiveExample != that.primitiveExample) return false;
+        
+        return true;
+    }
+    
+    @Override
+    public int hashCode() {
+        int result = objectExample != null ? objectExample.hashCode() : 0;
+        result = 31 * result + (primitiveExample);
+        return result;
+    }
 }
 ```
 

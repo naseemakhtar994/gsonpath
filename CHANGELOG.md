@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+Version 1.5.1 *(2016-07-27)*
+----------------------------
+
+* New: Interfaces annotated with `@AutoGsonAdapter` now generate `equals` and `hashCode` implementations within the generated POJO.
+     * All fields within the generated POJO are inspected.
+          * It is currently not possible to exclude fields from inspection
+     * The generated methods are Java 6 compatible as the code does not use the Java 7 `Objects.hash()` method.
+
 Version 1.5.1 *(2016-07-26)*
 ----------------------------
 
