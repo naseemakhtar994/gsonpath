@@ -1,7 +1,13 @@
 Change Log
 ==========
 
-Version 1.5.1 *(2016-07-27)*
+Version 1.5.3 *(2016-07-26)*
+----------------------------
+
+* Fix: The `FlattenJson` annotation may now be used on methods.
+     * Since the addition of interface support, it made sense to change this behaviour.
+
+Version 1.5.2 *(2016-07-27)*
 ----------------------------
 
 * New: Interfaces annotated with `@AutoGsonAdapter` now generate `equals` and `hashCode` implementations within the generated POJO.
