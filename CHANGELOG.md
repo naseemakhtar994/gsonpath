@@ -1,7 +1,13 @@
 Change Log
 ==========
 
-Version 1.5.3 *(2016-07-26)*
+Version 1.6.0 *(2016-07-28)*
+----------------------------
+
+* New: Added text substitution support for all fields and methods annotated with the `@SerializedName` annotation.
+     * See the [path substitution guide](guides/path_substitution.md) for details.
+
+Version 1.5.3 *(2016-07-28)*
 ----------------------------
 
 * Fix: The `FlattenJson` annotation may now be used on methods.
