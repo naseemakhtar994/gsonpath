@@ -23,13 +23,15 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
-    private int mSafeVariableCount = 0;
+    private int mSafeVariableCount;
 
     public AutoGsonAdapterGenerator(ProcessingEnvironment processingEnv) {
         super(processingEnv);
     }
 
     public HandleResult handle(TypeElement modelElement) throws ProcessingException {
+        mSafeVariableCount = 0;
+        
         ClassName modelClassName = ClassName.get(modelElement);
         ClassName adapterClassName = ClassName.get(modelClassName.packageName(), generateClassName(modelClassName));
 
@@ -51,6 +53,16 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         boolean serializeNulls = autoGsonAnnotation.serializeNulls().booleanValue;
         char flattenDelimiter = autoGsonAnnotation.flattenDelimiter().value();
         GsonFieldValidationType gsonFieldValidationType = autoGsonAnnotation.fieldValidationType();
+        PathSubstitution[] pathSubstitutions = autoGsonAnnotation.substitutions();
+        
+        // Validate the path substitutions. Duplicate keys are not allowed.
+        Set<String> pathSubstitutionKeys = new HashSet<>(pathSubstitutions.length);
+        for (PathSubstitution pathSubstitution : pathSubstitutions) {
+            if (pathSubstitutionKeys.contains(pathSubstitution.original())) {
+                throw new ProcessingException("PathSubstitution original values must be unique");
+            }
+            pathSubstitutionKeys.add(pathSubstitution.original());
+        }
 
         // We want to translate the Gson Path 'GsonPathFieldNamingPolicy' enum into the standard Gson version.
         FieldNamingPolicy gsonFieldNamingPolicy = getGsonFieldNamingPolicy(autoGsonAnnotation.fieldNamingPolicy());
@@ -124,7 +136,7 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
         }
 
         GsonFieldTree fieldTree = createFieldTree(fieldInfoList, autoGsonAnnotation.rootField(),
-                flattenDelimiter, gsonFieldNamingPolicy, gsonFieldValidationType);
+                flattenDelimiter, gsonFieldNamingPolicy, gsonFieldValidationType, pathSubstitutions);
 
         // Adds the mandatory field index constants and also populates the mandatoryInfoMap values.
         Map<String, MandatoryFieldInfo> mandatoryInfoMap = new LinkedHashMap<>();
@@ -279,7 +291,8 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
                                           String rootField,
                                           char flattenDelimiter,
                                           FieldNamingPolicy gsonFieldNamingPolicy,
-                                          GsonFieldValidationType gsonFieldValidationType) throws ProcessingException {
+                                          GsonFieldValidationType gsonFieldValidationType,
+                                          PathSubstitution[] pathSubstitutions) throws ProcessingException {
 
         // Obtain the correct mapping structure beforehand.
         GsonFieldTree absoluteRootFieldTree = new GsonFieldTree();
@@ -307,6 +320,11 @@ public class AutoGsonAdapterGenerator extends BaseAdapterGenerator {
 
             if (serializedNameAnnotation != null && serializedNameAnnotation.value().length() > 0) {
                 jsonFieldPath = serializedNameAnnotation.value();
+                
+                // Check if the serialized name needs any values to be substituted
+                for (PathSubstitution substitution : pathSubstitutions) {
+                    jsonFieldPath = jsonFieldPath.replaceAll("\\{" + substitution.original() + "\\}", substitution.replacement());
+                }
 
             } else {
                 // Since the serialized annotation wasn't specified, we need to apply the naming policy instead.

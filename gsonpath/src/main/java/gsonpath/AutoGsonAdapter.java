@@ -144,4 +144,14 @@ public @interface AutoGsonAdapter {
      * The feature allows you to create a contract where you can be sure that the POJO has all the data that you expect.
      */
     GsonFieldValidationType fieldValidationType() default GsonFieldValidationType.NO_VALIDATION_OR_INHERIT_DEFAULT_IF_AVAILABLE;
+
+    /**
+     * An array of substitutions which are applied to all fields annotated with {@link com.google.gson.annotations.SerializedName}.
+     * <p>
+     * This also includes fields which are inherited. It provides a useful mechanism to reuse the same model for
+     * json with different names, but a similar structure.
+     * <p>
+     * See the {@link PathSubstitution} Javadoc for more details.
+     */
+    PathSubstitution[] substitutions() default {};
 }
