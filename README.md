@@ -5,8 +5,16 @@
 An annotation processor library which generates gson type adapters at compile time which also use basic JsonPath functionality.
 
 The benefits of this library are as follows:
-- Statically generated type adapters can remove the majority of reflection used by the Gson library.
-- JsonPath syntax can reduce the number of POJOs required to parse a JSON file. This provides easier integration with other libraries which rely on a flat class structure (such as DBFlow)
+- Statically generated Gson Type Adapters can remove the majority of reflection used by the Gson library.
+- JsonPath syntax can reduce the number of POJOs required to parse a JSON file. An example of this is shown in the next section.
+   - This allows for easier integration with other libraries which rely on a flat class structure (such as DBFlow).
+- Add optional client side validation to your json using `@Nullable` and `NonNull` annotations to add mandatory field constraints.
+- Generates immutable POJOs based off annotated interfaces
+   - Similar to AutoValue, however you do not need to reference the concrete implementation as the Type Adapter creates it on your behalf.
+   - See the [interfaces guide](guides/interfaces.md) for further details.
+- Reduce the amount of repetition when creating POJOs using Path Substitutions. 
+   - A more powerful version of the Gson `SerializedName` alternate key by using string replacement functionality within the `AutoGsonAdapter` annotation.
+   - See the [path substitution guide](guides/path_substitution.md) for further details.
 
 For example, given the following JSON:
 
