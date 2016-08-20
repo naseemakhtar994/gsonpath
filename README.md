@@ -1,6 +1,6 @@
 # Gson Path
 
-[![JitPack.io](https://jitpack.io/v/lachlanm/gsonpath.svg)](https://jitpack.io/#lachlanm/gsonpath)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.lachlanmckee/gsonpath/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.lachlanmckee/gsonpath)
 
 An annotation processor library which generates gson type adapters at compile time which also use basic JsonPath functionality.
 
@@ -194,11 +194,9 @@ public final class PersonModel_GsonTypeAdapter extends TypeAdapter<PersonModel> 
 ```
 
 ## Download
-At the moment the library is not available on Maven, this will change in the future.
-For now, you can obtain it via [Jitpack](https://jitpack.io/docs/)
+This library is available on Maven, you can add it to your project using the following gradle dependencies:
 
-Gradle:
 ```gradle
-compile 'com.github.lachlanm.gsonpath:gsonpath:1.6.0'
-apt 'com.github.lachlanm.gsonpath:gsonpath-compiler:1.6.0'
+compile 'net.lachlanmckee:gsonpath:1.6.0'
+apt 'net.lachlanmckee:gsonpath-compiler:1.6.0'
 ```
