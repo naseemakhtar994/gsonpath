@@ -1,7 +1,7 @@
 package gsonpath;
 
 /**
- * Provides a text substitution mechanism to the {@link com.google.gson.annotations.SerializedName} annotation
+ * Provides a text substitution mechanism to the <i>com.google.gson.annotations.SerializedName</i> annotation
  * when used in conjunction with the {@link AutoGsonAdapter}.
  * <p>
  * A string replacement is performed by looking for the original text wrapped wih curly braces (e.g. for a original

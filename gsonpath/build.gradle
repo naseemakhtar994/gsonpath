@@ -1,6 +1,71 @@
 apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+group = 'net.lachlanmckee'
+version = '1.6.0'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.google.code.gson:gson:2.6.2'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+
+            pom.project {
+                name 'gsonpath'
+                packaging 'jar'
+                description 'An annotation processor which generates Type Adapters for the Google Gson library'
+                url 'http://lachlanmckee.net/gsonpath/'
+
+                scm {
+                    url 'scm:git@github.com:LachlanMcKee/gsonpath.git'
+                    connection 'scm:git@github.com:LachlanMcKee/gsonpath.git'
+                    developerConnection 'scm:git@github.com:LachlanMcKee/gsonpath.git'
+                }
+
+                licenses {
+                    license {
+                        name 'MIT License'
+                        url 'http://www.opensource.org/licenses/mit-license.php'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'lachlanmckee'
+                        name 'Lachlan McKee'
+                    }
+                }
+            }
+        }
+    }
 }

@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * are not obtained at runtime, instead they are statically referenced ahead of time.
  * <p/>
  * Another benefit of this generated {@link com.google.gson.TypeAdapter} class is that the
- * {@link com.google.gson.annotations.SerializedName} gson annotation is able to use very basic
+ * <i>com.google.gson.annotations.SerializedName</i> gson annotation is able to use very basic
  * JsonPath style notation. It can specify a tree branch notation which allows the POJO to
  * be much flatter than standard implementations
  * <p/>
@@ -146,7 +146,7 @@ public @interface AutoGsonAdapter {
     GsonFieldValidationType fieldValidationType() default GsonFieldValidationType.NO_VALIDATION_OR_INHERIT_DEFAULT_IF_AVAILABLE;
 
     /**
-     * An array of substitutions which are applied to all fields annotated with {@link com.google.gson.annotations.SerializedName}.
+     * An array of substitutions which are applied to all fields annotated with <i>com.google.gson.annotations.SerializedName</i>.
      * <p>
      * This also includes fields which are inherited. It provides a useful mechanism to reuse the same model for
      * json with different names, but a similar structure.
