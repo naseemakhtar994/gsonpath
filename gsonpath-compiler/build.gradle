@@ -51,7 +51,7 @@ uploadArchives {
             }
 
             pom.project {
-                name 'gsonpath'
+                name 'gsonpath-compiler'
                 packaging 'jar'
                 description 'An annotation processor which generates Type Adapters for the Google Gson library'
                 url 'http://lachlanmckee.net/gsonpath/'
