@@ -1,6 +1,6 @@
 # Gson Path
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.lachlanmckee/gsonpath/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.lachlanmckee/gsonpath)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.lachlanmckee/gsonpath/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.lachlanmckee/gsonpath) [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-gsonpath-green.svg?style=true)](https://android-arsenal.com/details/1/4191)
 
 An annotation processor library which generates gson type adapters at compile time which also use basic JsonPath functionality.
 
